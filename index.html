@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>EU HRC Signal Model — SteelCoin</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.0/marked.min.js"></script>
+<style>
+:root {
+  --bg:      #0a1628;
+  --card:    #0f2038;
+  --card2:   #132540;
+  --border:  #1e3d6e;
+  --accent:  #2E75B6;
+  --accent2: #4da6ff;
+  --text:    #d4e5f5;
+  --muted:   #5a7a9a;
+  --buy:     #27ae60;
+  --buy-dim: #1a4a30;
+  --sell:    #c0392b;
+  --sell-dim:#4a1a1a;
+  --flat:    #d68910;
+  --flat-dim:#4a3500;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+/* TOP BAR */
+.topbar {
+  background: #060e1c;
+  border-bottom: 1px solid var(--border);
+  padding: 10px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.topbar-left { display: flex; align-items: center; gap: 16px; }
+.logo { font-size: 13px; font-weight: 700; color: var(--accent2); letter-spacing: 0.05em; }
+.logo span { color: var(--muted); font-weight: 400; }
+.topbar-right { display: flex; align-items: center; gap: 10px; }
+.pill {
+  font-size: 11px; padding: 3px 10px; border-radius: 20px;
+  border: 1px solid var(--border); color: var(--muted); white-space: nowrap;
+}
+.btn {
+  font-size: 12px; padding: 5px 14px; border-radius: 6px;
+  border: 1px solid var(--accent); color: var(--accent2);
+  background: transparent; cursor: pointer; transition: background .15s;
+}
+.btn:hover { background: rgba(46,117,182,.2); }
+.btn-share { border-color: var(--muted); color: var(--muted); }
+.btn-share:hover { background: rgba(90,122,154,.15); }
+
+/* LAYOUT */
+.main { max-width: 1280px; margin: 0 auto; padding: 24px 20px; }
+.grid-top    { display: grid; grid-template-columns: 260px 1fr; gap: 16px; margin-bottom: 16px; }
+.grid-signals{ display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
+.grid-mid    { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 16px; }
+.grid-bot    { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+
+@media (max-width: 1000px) {
+  .grid-top     { grid-template-columns: 1fr; }
+  .grid-signals { grid-template-columns: 1fr 1fr; }
+  .grid-mid     { grid-template-columns: 1fr; }
+  .grid-bot     { grid-template-columns: 1fr; }
+}
+@media (max-width: 600px) {
+  .grid-signals { grid-template-columns: 1fr; }
+}
+
+/* CARD */
+.card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 10px; padding: 16px;
+}
+.card-title {
+  font-size: 10px; font-weight: 600; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 10px;
+}
+
+/* HERO CARD */
+.hero-card {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; text-align: center; padding: 24px 16px; border-width: 2px;
+}
+.hero-direction { font-size: 44px; font-weight: 800; letter-spacing: .04em; line-height: 1; margin-bottom: 6px; }
+.hero-score { font-size: 22px; font-weight: 700; margin-bottom: 10px; }
+.hero-spot {
+  font-size: 12px; color: var(--muted); padding-top: 10px;
+  border-top: 1px solid var(--border); width: 100%;
+}
+.hero-spot strong { color: var(--text); }
+.dir-buy  { color: var(--buy);  border-color: var(--buy); }
+.dir-sell { color: var(--sell); border-color: var(--sell); }
+.dir-flat { color: var(--flat); border-color: var(--flat); }
+
+/* SIGNAL CARDS */
+.sig-card { border-radius: 8px; padding: 14px; border: 1px solid var(--border); }
+.sig-buy  { border-color: #1a5c36; background: rgba(39,174,96,.08); }
+.sig-sell { border-color: #5c1a1a; background: rgba(192,57,43,.08); }
+.sig-flat { background: var(--card2); }
+.sig-name { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 6px; }
+.sig-label { font-size: 13px; font-weight: 700; margin-bottom: 6px; }
+.sig-detail { font-size: 11px; color: var(--muted); line-height: 1.5; }
+.score-buy  { color: var(--buy); }
+.score-sell { color: var(--sell); }
+.score-flat { color: var(--flat); }
+
+/* INVENTORY STRIP */
+.inv-strip { display: flex; gap: 12px; flex-wrap: wrap; }
+.inv-kv { flex: 1; min-width: 130px; }
+.inv-kv .kv-label { font-size: 10px; color: var(--muted); margin-bottom: 2px; }
+.inv-kv .kv-val { font-size: 20px; font-weight: 700; }
+.inv-kv .kv-sub { font-size: 10px; color: var(--muted); }
+
+/* DATA TABLE */
+.data-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+.data-table th { text-align: left; padding: 6px 8px; color: var(--muted); border-bottom: 1px solid var(--border); font-weight: 600; }
+.data-table td { padding: 5px 8px; border-bottom: 1px solid rgba(30,61,110,.4); }
+.data-table tr:last-child td { border-bottom: none; }
+.tag { display: inline-block; font-size: 9px; padding: 1px 5px; border-radius: 3px; font-weight: 600; letter-spacing: .03em; }
+.tag-act { background: #1a4a30; color: #7ecf99; }
+.tag-est { background: #4a3500; color: #f4c87a; }
+.tag-usr { background: #1a204a; color: #7ab0f4; }
+.gap-pos { color: var(--buy); }
+.gap-neg { color: var(--sell); }
+.gap-neu { color: var(--flat); }
+
+/* CHART */
+.chart-wrap { position: relative; height: 260px; }
+
+/* ANALYST INPUT PANEL */
+.input-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }
+.input-row input, .input-row select, .input-row textarea {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 6px;
+  color: var(--text); font-size: 12px; padding: 6px 8px; font-family: inherit;
+}
+.input-row input:focus, .input-row select:focus, .input-row textarea:focus {
+  outline: none; border-color: var(--accent);
+}
+.input-row textarea { flex: 1; min-width: 200px; resize: vertical; min-height: 34px; }
+.btn-save {
+  font-size: 12px; padding: 6px 14px; border-radius: 6px; cursor: pointer;
+  border: 1px solid var(--buy); color: var(--buy); background: transparent;
+}
+.btn-save:hover { background: rgba(39,174,96,.15); }
+.btn-run {
+  font-size: 13px; font-weight: 700; padding: 8px 20px; border-radius: 6px; cursor: pointer;
+  border: 1px solid var(--accent2); color: var(--accent2); background: rgba(46,117,182,.1);
+}
+.btn-run:hover { background: rgba(46,117,182,.3); }
+.btn-run:disabled { opacity: .5; cursor: wait; }
+.btn-del {
+  border: none; background: transparent; color: var(--muted); cursor: pointer;
+  font-size: 13px; padding: 0 4px;
+}
+.btn-del:hover { color: var(--sell); }
+.note-list { list-style: none; font-size: 11px; }
+.note-list li { padding: 4px 0; border-bottom: 1px solid rgba(30,61,110,.35); display: flex; gap: 6px; align-items: baseline; }
+.note-list li:last-child { border-bottom: none; }
+.note-date { color: var(--muted); white-space: nowrap; font-size: 10px; }
+.run-log {
+  background: #060e1c; border: 1px solid var(--border); border-radius: 6px;
+  padding: 10px; font-family: ui-monospace, monospace; font-size: 10px;
+  color: var(--muted); max-height: 300px; overflow: auto; white-space: pre-wrap;
+  margin-top: 10px; display: none;
+}
+.grid-notes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+@media (max-width: 1000px) { .grid-notes { grid-template-columns: 1fr; } }
+.static-hint { font-size: 11px; color: var(--muted); font-style: italic; }
+
+/* DAILY BRIEF (markdown) */
+.brief-body { font-size: 13px; line-height: 1.65; }
+.brief-body h1 { font-size: 16px; margin: 4px 0 10px; color: var(--accent2); }
+.brief-body h2 { font-size: 13px; margin: 14px 0 6px; color: var(--accent2); text-transform: uppercase; letter-spacing: .05em; }
+.brief-body h3 { font-size: 12px; margin: 10px 0 4px; color: var(--text); }
+.brief-body p { margin: 6px 0; }
+.brief-body ul, .brief-body ol { margin: 6px 0 6px 20px; }
+.brief-body li { margin: 3px 0; }
+.brief-body table { border-collapse: collapse; margin: 8px 0; font-size: 12px; }
+.brief-body th, .brief-body td { border: 1px solid var(--border); padding: 4px 10px; text-align: right; }
+.brief-body th { color: var(--muted); font-weight: 600; }
+.brief-body th:first-child, .brief-body td:first-child { text-align: left; }
+.brief-body code { background: #060e1c; border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; font-size: 11px; }
+.brief-body strong { color: var(--accent2); }
+.brief-body blockquote { border-left: 3px solid var(--border); margin: 8px 0; padding: 2px 12px; color: var(--muted); }
+.brief-body hr { border: none; border-top: 1px solid var(--border); margin: 12px 0; }
+
+/* FOOTER */
+.footer {
+  margin-top: 32px; padding: 20px; border-top: 1px solid var(--border);
+  font-size: 11px; color: var(--muted); line-height: 1.7;
+}
+.footer strong { color: var(--text); }
+.error-msg { padding: 40px; text-align: center; color: var(--muted); font-size: 14px; }
+.spinner { display: inline-block; width: 18px; height: 18px; border: 2px solid var(--border); border-top-color: var(--accent2); border-radius: 50%; animation: spin .7s linear infinite; vertical-align: middle; }
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="logo">SteelCoin <span>/ EU HRC Demand-Gap Signal v4</span></div>
+    <div class="pill" id="period-pill">Loading…</div>
+  </div>
+  <div class="topbar-right">
+    <div class="pill" id="updated-pill">—</div>
+    <button class="btn btn-share" onclick="shareUrl()">Share URL</button>
+    <button class="btn" onclick="refresh()"><span class="spinner" id="spin" style="display:none"></span> Refresh</button>
+  </div>
+</div>
+
+<div class="main" id="content">
+  <div class="error-msg"><span class="spinner"></span>&nbsp; Loading signal data…</div>
+</div>
+
+<script>
+// ─── Fetch & render ────────────────────────────────────────────────────────────
+let _chart1 = null, _chart2 = null;
+let SERVER_MODE = false;   // true when served by server.py (API available)
+let _manual = null;        // live manual_inputs.json when SERVER_MODE
+let _brief = null;         // daily analyst brief markdown
+
+function refresh() {
+  document.getElementById("spin").style.display = "inline-block";
+  const jobs = [
+    fetch("./signal_output.json?t=" + Date.now())
+      .then(r => { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); }),
+    fetch("./brief.md?t=" + Date.now()).then(r => r.ok ? r.text() : null).catch(() => null),
+  ];
+  if (SERVER_MODE) {
+    jobs.push(fetch("/api/manual").then(r => r.ok ? r.json() : null).catch(() => null));
+  }
+  Promise.all(jobs)
+    .then(([d, brief, manual]) => { _brief = brief || null; _manual = manual || null; render(d); })
+    .catch(e => {
+      document.getElementById("content").innerHTML =
+        `<div class="error-msg">Could not load signal_output.json.<br><span style="font-size:12px;color:#3d5a7a">${e.message}</span><br><br>Run <code>python model_v4.py</code> to generate the data file.</div>`;
+    })
+    .finally(() => { document.getElementById("spin").style.display = "none"; });
+}
+
+function shareUrl() {
+  navigator.clipboard.writeText(location.href).then(() => {
+    const b = document.querySelector(".btn-share");
+    b.textContent = "Copied!";
+    setTimeout(() => b.textContent = "Share URL", 1500);
+  });
+}
+
+// ─── Main render ──────────────────────────────────────────────────────────────
+function render(d) {
+  const dir    = d.direction;
+  const dirCls = dir === "BUY" ? "dir-buy" : dir === "SELL" ? "dir-sell" : "dir-flat";
+  const arrow  = d.arrow || (dir === "BUY" ? "▲" : dir === "SELL" ? "▼" : "→");
+  const spot   = d.market?.hrc_spot;
+  const asOf   = d.as_of;
+  const sigs   = d.signals || {};
+  const SA = sigs.SA || {}, SB = sigs.SB || {}, SC = sigs.SC || {};
+
+  // Pills
+  document.getElementById("period-pill").textContent = "As of " + asOf;
+  const gen = new Date(d.generated);
+  document.getElementById("updated-pill").textContent =
+    "Updated " + gen.toLocaleDateString("de-DE", {day:"2-digit",month:"short",year:"numeric"}) +
+    " " + gen.toLocaleTimeString("de-DE", {hour:"2-digit",minute:"2-digit"});
+
+  // Hero
+  const heroHtml = `
+  <div class="card hero-card ${dirCls}">
+    <div class="card-title">Overall Signal</div>
+    <div class="hero-direction ${dirCls}">${dir} ${arrow}</div>
+    <div class="hero-score" style="color:${scoreColor(d.composite)}">Composite: ${fmtScore(d.composite)}</div>
+    <div class="hero-spot">
+      NW EU HRC Spot: <strong>${spot != null ? "€" + spot.toFixed(0) + "/t" : "DO NOT KNOW"}</strong>
+      ${SC.t6m_price != null ? `&nbsp;|&nbsp; EHR T+6M: <strong>€${SC.t6m_price.toFixed(0)}/t</strong>` : ""}
+    </div>
+  </div>`;
+
+  // Market context card
+  const cum = SB.cumulative_gap_mt;
+  const gap3m = SA.gap_3m_ma;
+  const contextHtml = `
+  <div class="card" style="display:flex;flex-direction:column;justify-content:center;">
+    <div class="card-title">Market Context</div>
+    <div class="inv-strip">
+      <div class="inv-kv">
+        <div class="kv-label">HRC Spot</div>
+        <div class="kv-val" style="color:var(--accent2)">${spot != null ? "€"+spot.toFixed(0) : "—"}</div>
+        <div class="kv-sub">Argus NW EU EXW  [USER-PROVIDED]</div>
+      </div>
+      <div class="inv-kv">
+        <div class="kv-label">Cumul. Inventory Gap</div>
+        <div class="kv-val ${cum != null && cum < -3 ? "gap-pos" : cum != null && cum > 3 ? "gap-neg" : "gap-neu"}">${cum != null ? fmtGap(cum)+" Mt" : "—"}</div>
+        <div class="kv-sub">vs Jan-2019 baseline  [EST]</div>
+      </div>
+      <div class="inv-kv">
+        <div class="kv-label">Gap 3M-MA</div>
+        <div class="kv-val ${gap3m != null && gap3m > 0.25 ? "gap-pos" : gap3m != null && gap3m < -0.25 ? "gap-neg" : "gap-neu"}">${gap3m != null ? fmtGap(gap3m)+" Mt/mo" : "—"}</div>
+        <div class="kv-sub">Apparent − Real  [EST]</div>
+      </div>
+      <div class="inv-kv">
+        <div class="kv-label">EHR T+6M</div>
+        <div class="kv-val ${SC.t6m_pct != null && SC.t6m_pct > 0.04 ? "gap-pos" : SC.t6m_pct != null && SC.t6m_pct < -0.04 ? "gap-neg" : "gap-neu"}">${SC.t6m_price != null ? "€"+SC.t6m_price.toFixed(0) : "—"}</div>
+        <div class="kv-sub">${SC.t6m_pct != null ? (SC.t6m_pct>0?"+":"")+(SC.t6m_pct*100).toFixed(1)+"% vs spot" : ""}  [${d.market?.curve_source || "DO NOT KNOW"}]</div>
+      </div>
+    </div>
+  </div>`;
+
+  // Signal cards
+  const sigDefs = [
+    { key: "SA", name: "SA — Inventory Flow", s: SA,
+      detail: `3M-MA: ${gap3m != null ? fmtGap(gap3m)+" Mt/mo" : "—"} &nbsp;|&nbsp; Latest: ${SA.gap_latest_mt != null ? fmtGap(SA.gap_latest_mt)+" Mt" : "—"}<br>Weight: 40%` },
+    { key: "SB", name: "SB — Inventory Level", s: SB,
+      detail: `Cumulative gap: ${cum != null ? fmtGap(cum)+" Mt" : "—"}<br>Lean &lt; −3 Mt  /  Bloated &gt; +3 Mt  /  Weight: 35%` },
+    { key: "SC", name: "SC — Forward Curve", s: SC,
+      detail: `T+6M: ${SC.t6m_price != null ? "€"+SC.t6m_price.toFixed(0)+"/t" : "—"} (${SC.t6m_pct != null ? (SC.t6m_pct>0?"+":"")+(SC.t6m_pct*100).toFixed(1)+"%" : "—"})<br>Curve slope: ${SC.slope_annual != null ? (SC.slope_annual>0?"+":"")+SC.slope_annual.toFixed(1)+"€/t per yr" : "—"}  /  Weight: 25%` },
+  ];
+
+  const sigCards = sigDefs.map(({ key, name, s, detail }) => {
+    const score = s.score;
+    const cls = score > 0.3 ? "sig-buy" : score < -0.3 ? "sig-sell" : "sig-flat";
+    const sc  = score > 0.3 ? "score-buy" : score < -0.3 ? "score-sell" : "score-flat";
+    return `
+    <div class="sig-card ${cls}">
+      <div class="sig-name">${name}</div>
+      <div class="sig-label ${sc}">${s.label || "DO NOT KNOW"}</div>
+      <div class="sig-detail">${detail}</div>
+    </div>`;
+  }).join("");
+
+  // Annual context table
+  const annualCtx = d.annual_context || {};
+  const annualRows = Object.entries(annualCtx).map(([yr, row]) => {
+    const gCls = row.gap_mt > 0.5 ? "gap-pos" : row.gap_mt < -0.5 ? "gap-neg" : "gap-neu";
+    return `<tr>
+      <td>${yr}</td>
+      <td class="${gCls}">${row.gap_mt > 0 ? "+" : ""}${row.gap_mt.toFixed(2)} Mt</td>
+      <td>${row.signal}</td>
+      <td><span class="tag ${row.label?.includes("EST") ? "tag-est" : row.label?.includes("USER") ? "tag-usr" : "tag-act"}">${row.label?.split("—")[0]?.trim()}</span></td>
+    </tr>`;
+  }).join("");
+
+  // Key signals table (with weights)
+  const sigBreakdown = sigDefs.map(({ key, s }) => {
+    const score = s.score || 0;
+    const wt = s.weight || 0;
+    const contrib = (score * wt).toFixed(3);
+    const sc = score > 0 ? "gap-pos" : score < 0 ? "gap-neg" : "gap-neu";
+    return `<tr>
+      <td>${key}</td>
+      <td class="${sc}">${score >= 0 ? "+" : ""}${score.toFixed(2)}</td>
+      <td>${(wt*100).toFixed(0)}%</td>
+      <td class="${sc}">${Number(contrib) >= 0 ? "+" : ""}${contrib}</td>
+    </tr>`;
+  }).join("");
+  const compCls = d.composite > 0 ? "gap-pos" : d.composite < 0 ? "gap-neg" : "gap-neu";
+
+  document.getElementById("content").innerHTML = `
+    <div class="grid-top">
+      ${heroHtml}
+      ${contextHtml}
+    </div>
+
+    <div class="grid-signals">
+      ${sigCards}
+    </div>
+
+    <div class="grid-mid">
+      <div class="card">
+        <div class="card-title">Monthly Gap & Cumulative Inventory (Apparent − Real Demand)</div>
+        <div class="chart-wrap"><canvas id="chart-gap"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">HRC Spot Price (Argus NW EU EXW)</div>
+        <div class="chart-wrap"><canvas id="chart-spot"></canvas></div>
+      </div>
+    </div>
+
+    <div class="grid-bot">
+      <div class="card">
+        <div class="card-title">Annual Inventory Signal (Apparent − Real, ACTUAL Eurofer)</div>
+        <table class="data-table">
+          <thead><tr><th>Year</th><th>Gap (Mt)</th><th>Signal</th><th>Source</th></tr></thead>
+          <tbody>${annualRows}</tbody>
+        </table>
+      </div>
+      <div class="card">
+        <div class="card-title">Signal Decomposition</div>
+        <table class="data-table">
+          <thead><tr><th>Signal</th><th>Score</th><th>Weight</th><th>Contribution</th></tr></thead>
+          <tbody>${sigBreakdown}</tbody>
+          <tfoot><tr>
+            <td colspan="3" style="text-align:right;font-weight:700;padding-top:8px">COMPOSITE</td>
+            <td class="${compCls}" style="font-weight:700;padding-top:8px">${d.composite >= 0 ? "+" : ""}${d.composite?.toFixed(3)}</td>
+          </tr></tfoot>
+        </table>
+        <div style="margin-top:12px;font-size:10px;color:var(--muted);line-height:1.6">
+          Direction thresholds: &gt;+0.40 → BUY &nbsp;|&nbsp; &lt;−0.40 → SELL &nbsp;|&nbsp; else NEUTRAL<br>
+          SA gap thresholds: ±0.25 Mt/mo &nbsp;|&nbsp; SB level: ±3 Mt &nbsp;|&nbsp; SC curve: ±4%
+        </div>
+      </div>
+    </div>
+
+    ${briefHtml()}
+
+    ${reportHtml(d)}
+
+    ${analystPanelHtml(d)}
+
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-title">Market Notes ${SERVER_MODE ? "(editable — feeds the model report)" : "(snapshot from last model run)"}</div>
+      <div class="grid-notes">${notesColumnsHtml(d)}</div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-title">Methodology</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;font-size:11px;color:var(--muted);line-height:1.6">
+        <div><strong style="color:var(--text)">Real Demand</strong><br>
+        Eurostat Wtd sector index × 0.6848 Mt/pt / 12 = monthly real (Mt).<br>
+        Anchor: 2021 avg=100 → 68.48 Mt/yr (Eurofer-calibrated).<br>
+        Sectors: C29 39%, F41/43 28%, F42 13%, C28 12%, C31/32 9%.</div>
+        <div><strong style="color:var(--text)">Apparent Demand</strong><br>
+        Annual AC (Eurofer ACTUAL, 2018-2025) distributed monthly by Eurostat Wtd seasonal pattern.<br>
+        Formula: AC_annual × (Wtd_month / Wtd_annual_avg) / 12.</div>
+        <div><strong style="color:var(--text)">SA — Inventory Flow (40%)</strong><br>
+        Monthly gap = Apparent − Real, 3M-MA.<br>
+        &gt;+0.25 Mt/mo → RESTOCK ▲ (+1) &nbsp;|&nbsp; &lt;−0.25 → DESTOCK ▼ (−1).</div>
+        <div><strong style="color:var(--text)">SB — Inventory Level (35%)</strong><br>
+        Cumulative gap from Jan-2019 baseline (implied stock position).<br>
+        &lt;−3 Mt → LEAN ▲ (+1) &nbsp;|&nbsp; &gt;+3 Mt → BLOATED ▼ (−1).</div>
+        <div><strong style="color:var(--text)">SC — Forward Curve (25%)</strong><br>
+        EHR CME T+6M futures vs Argus spot.<br>
+        &gt;+4% → CONTANGO ▲ (+1) &nbsp;|&nbsp; &lt;−4% → BACKWARDATION ▼ (−1).</div>
+        <div><strong style="color:var(--text)">Key Caveats</strong><br>
+        Monthly apparent = EST (annual actual distributed seasonally; Comext monthly unavailable).<br>
+        Apr-2026 imports +83% vs avg due to safeguard front-loading — may distort 2026 apparent.</div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <strong>EU HRC NW Europe — Demand-Gap Signal Model v4</strong> &nbsp;·&nbsp; SteelCoin — public analysis view (licensed price data not shown)<br>
+      Argus NW EU HRC EXW (USER-PROVIDED) &nbsp;·&nbsp; Eurostat sts_inpr_m + sts_copr_m (ACTUAL) &nbsp;·&nbsp; EHR CME (USER-PROVIDED) &nbsp;·&nbsp; Eurofer annual AC (ACTUAL)<br>
+      Run <code>python model_v4.py</code> to refresh. &nbsp;·&nbsp; JSON generated: ${d.generated ? new Date(d.generated).toISOString().replace("T"," ").slice(0,16) : "unknown"}
+    </div>`;
+
+  // Draw charts
+  drawGapChart(d.history || []);
+  drawSpotChart(d.history || []);
+}
+
+// ─── Daily analyst brief (written commentary, docs/brief.md) ──────────────────
+function briefHtml() {
+  if (!_brief) {
+    return `<div class="card" style="margin-bottom:16px">
+      <div class="card-title">Daily Analyst Brief</div>
+      <div class="static-hint">No brief published yet (docs/brief.md missing).</div>
+    </div>`;
+  }
+  let html;
+  try {
+    html = marked.parse(_brief);
+  } catch (e) {
+    html = `<pre style="white-space:pre-wrap">${esc(_brief)}</pre>`;
+  }
+  return `<div class="card" style="margin-bottom:16px;border-color:var(--accent)">
+    <div class="card-title" style="color:var(--accent2)">Daily Analyst Brief</div>
+    <div class="brief-body">${html}</div>
+  </div>`;
+}
+
+// ─── Full analyst report (from model run) ─────────────────────────────────────
+function reportHtml(d) {
+  const txt = d.report_text;
+  if (!txt) {
+    return `<div class="card" style="margin-bottom:16px">
+      <div class="card-title">Full Analyst Report</div>
+      <div class="static-hint">No report in this data file yet — run the model to generate it.</div>
+    </div>`;
+  }
+  // Split into the three standard sections on the ━━ markers
+  const parts = txt.split(/━━\s*/).map(s => s.trim()).filter(Boolean);
+  // parts[0] = header block, then pairs of "SECTION NAME" / body
+  const sections = [];
+  for (let i = 1; i < parts.length - 1; i += 2) {
+    sections.push({ title: parts[i].replace(/━/g, "").trim(), body: parts[i + 1] || "" });
+  }
+  const inner = sections.length
+    ? sections.map((s, i) => `
+      <details ${i === 0 || i === 2 ? "open" : ""} style="margin-bottom:8px">
+        <summary style="cursor:pointer;font-size:12px;font-weight:700;letter-spacing:.05em;color:var(--accent2);padding:4px 0">${esc(s.title)}</summary>
+        <pre style="white-space:pre-wrap;font-family:ui-monospace,monospace;font-size:11px;line-height:1.6;color:var(--text);background:#060e1c;border:1px solid var(--border);border-radius:6px;padding:12px;margin-top:6px;overflow-x:auto">${esc(s.body)}</pre>
+      </details>`).join("")
+    : `<pre style="white-space:pre-wrap;font-family:ui-monospace,monospace;font-size:11px;line-height:1.6;color:var(--text);background:#060e1c;border:1px solid var(--border);border-radius:6px;padding:12px;overflow-x:auto">${esc(txt)}</pre>`;
+  return `<div class="card" style="margin-bottom:16px">
+    <div class="card-title">Full Analyst Report — generated ${d.generated ? new Date(d.generated).toLocaleString("de-DE", {day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"}) : ""}</div>
+    ${inner}
+  </div>`;
+}
+
+// ─── Analyst input panel (SERVER_MODE only) ───────────────────────────────────
+function analystPanelHtml(d) {
+  if (!SERVER_MODE) {
+    return `<div class="card" style="margin-bottom:16px">
+      <div class="card-title">Analyst Input</div>
+      <div class="static-hint">Read-only mode. Start the local server for manual inputs:
+      <code>.venv/bin/python server.py</code> → <code>http://localhost:8642</code></div>
+    </div>`;
+  }
+  const today = new Date().toISOString().slice(0, 10);
+  const spots = (_manual?.argus_spot_manual || []);
+  const spotRows = spots.map((s, i) => `
+    <li><span class="note-date">${s.date}</span>
+        <span style="flex:1">€${Number(s.eur_t).toFixed(2)}/t ${s.note ? "— " + esc(s.note) : ""}</span>
+        <button class="btn-del" onclick="delSpot(${i})" title="Delete">×</button></li>`).join("");
+
+  return `
+  <div class="card" style="margin-bottom:16px;border-color:var(--accent)">
+    <div class="card-title" style="color:var(--accent2)">Analyst Input — manual data entry</div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+      <div>
+        <div style="font-size:12px;font-weight:700;margin-bottom:8px">Argus Spot Print (€/t EXW)</div>
+        <div class="input-row">
+          <input type="date" id="spot-date" value="${today}">
+          <input type="number" id="spot-val" step="0.25" placeholder="€/t e.g. 690" style="width:110px">
+          <input type="text" id="spot-note" placeholder="note (optional)" style="width:140px">
+          <button class="btn-save" onclick="addSpot()">Save</button>
+        </div>
+        <ul class="note-list">${spotRows || '<li class="static-hint">No manual spot entries yet — series uses the Argus file.</li>'}</ul>
+      </div>
+      <div>
+        <div style="font-size:12px;font-weight:700;margin-bottom:8px">Add Market Note</div>
+        <div class="input-row">
+          <select id="note-cat" onchange="document.getElementById('note-dir').style.display = this.value==='risks' ? '' : 'none'">
+            <option value="supply">Supply</option>
+            <option value="regulatory">Regulatory</option>
+            <option value="risks">Risk</option>
+          </select>
+          <input type="date" id="note-date" value="${today}">
+          <select id="note-dir" style="display:none">
+            <option value="down">↓ bearish</option>
+            <option value="up">↑ bullish</option>
+          </select>
+        </div>
+        <div class="input-row">
+          <textarea id="note-text" placeholder="e.g. ArcelorMittal Ghent BF relined, back at capacity"></textarea>
+          <button class="btn-save" onclick="addNote()">Add</button>
+        </div>
+        <div class="static-hint">Notes appear in the model report and Excel after the next run.</div>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);display:flex;gap:14px;align-items:center">
+      <button class="btn-run" id="btn-run" onclick="runModel()">▶ Run Model</button>
+      <span class="static-hint">Fetches live EHR curve from CME (~30s, Chrome opens briefly), recomputes signals, updates this page + Excel.</span>
+    </div>
+    <div class="run-log" id="run-log"></div>
+  </div>`;
+}
+
+function notesColumnsHtml(d) {
+  // Live store when server mode, otherwise the snapshot baked into signal_output.json
+  const notes = SERVER_MODE ? (_manual?.market_notes || {}) : (d.market_notes || {});
+  const cols = [["supply", "Supply"], ["regulatory", "Regulatory"], ["risks", "Key Risks"]];
+  return cols.map(([cat, title]) => {
+    const items = (notes[cat] || []).map((n, i) => {
+      const pre = cat === "risks" ? (n.direction === "up" ? "↑ " : "↓ ") : "";
+      const tag = n.label ? ` <span class="tag ${n.label.includes("USER") ? "tag-usr" : n.label.includes("EST") ? "tag-est" : "tag-act"}">${esc(n.label.split("—")[0].trim())}</span>` : "";
+      const del = SERVER_MODE ? `<button class="btn-del" onclick="delNote('${cat}',${i})" title="Delete">×</button>` : "";
+      return `<li><span class="note-date">${n.date || ""}</span><span style="flex:1">${pre}${esc(n.text || "")}${tag}</span>${del}</li>`;
+    }).join("");
+    return `<div>
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px">${title}</div>
+      <ul class="note-list">${items || '<li class="static-hint">none recorded</li>'}</ul>
+    </div>`;
+  }).join("");
+}
+
+function esc(s) {
+  return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+// ─── API actions ──────────────────────────────────────────────────────────────
+function api(path, body) {
+  return fetch(path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  }).then(r => r.json());
+}
+
+function addSpot() {
+  const date = document.getElementById("spot-date").value;
+  const val  = document.getElementById("spot-val").value;
+  if (!date || !val) { alert("Date and price required"); return; }
+  api("/api/spot", { date, eur_t: parseFloat(val), note: document.getElementById("spot-note").value })
+    .then(r => r.ok ? refresh() : alert(r.error || "Failed"));
+}
+
+function delSpot(i) {
+  api("/api/spot/delete", { index: i }).then(r => r.ok ? refresh() : alert(r.error || "Failed"));
+}
+
+function addNote() {
+  const cat  = document.getElementById("note-cat").value;
+  const text = document.getElementById("note-text").value.trim();
+  if (!text) { alert("Note text required"); return; }
+  const body = { category: cat, date: document.getElementById("note-date").value, text };
+  if (cat === "risks") body.direction = document.getElementById("note-dir").value;
+  api("/api/note", body).then(r => r.ok ? refresh() : alert(r.error || "Failed"));
+}
+
+function delNote(cat, i) {
+  api("/api/note/delete", { category: cat, index: i }).then(r => r.ok ? refresh() : alert(r.error || "Failed"));
+}
+
+function runModel() {
+  const btn = document.getElementById("btn-run");
+  const log = document.getElementById("run-log");
+  btn.disabled = true; btn.textContent = "Running… (~30s)";
+  log.style.display = "block"; log.textContent = "Starting model run — fetching live EHR curve from CME …";
+  api("/api/run", {})
+    .then(r => {
+      log.textContent = r.log || r.error || "no output";
+      if (r.ok) refresh();
+      // keep log visible after refresh
+      setTimeout(() => {
+        const l2 = document.getElementById("run-log");
+        if (l2) { l2.style.display = "block"; l2.textContent = r.log || ""; l2.scrollTop = l2.scrollHeight; }
+      }, 300);
+    })
+    .catch(e => { log.textContent = "Run failed: " + e.message; })
+    .finally(() => {
+      const b2 = document.getElementById("btn-run");
+      if (b2) { b2.disabled = false; b2.textContent = "▶ Run Model"; }
+    });
+}
+
+// ─── Charts ───────────────────────────────────────────────────────────────────
+function drawGapChart(history) {
+  if (_chart1) { _chart1.destroy(); _chart1 = null; }
+  const labels = history.map(h => h.period);
+  const gap3m  = history.map(h => h.gap_3m_ma);
+  const cumGap = history.map(h => h.cumulative_gap_mt);
+
+  _chart1 = new Chart(document.getElementById("chart-gap").getContext("2d"), {
+    data: {
+      labels,
+      datasets: [
+        { type: "bar", label: "Monthly Gap (Mt)", data: history.map(h => h.gap_mt),
+          yAxisID: "yL",
+          backgroundColor: history.map(h => h.gap_mt == null ? "transparent" :
+            h.gap_mt > 0.25 ? "rgba(39,174,96,.4)" : h.gap_mt < -0.25 ? "rgba(192,57,43,.4)" : "rgba(214,137,16,.3)"),
+          borderColor:     history.map(h => h.gap_mt == null ? "transparent" :
+            h.gap_mt > 0.25 ? "rgba(39,174,96,.8)" : h.gap_mt < -0.25 ? "rgba(192,57,43,.8)" : "rgba(214,137,16,.6)"),
+          borderWidth: 1, order: 2 },
+        { type: "line", label: "Gap 3M-MA", data: gap3m, yAxisID: "yL",
+          borderColor: "#ffffff", borderWidth: 1.5, pointRadius: 0, tension: 0.3, fill: false, order: 1 },
+        { type: "line", label: "Cumulative Gap (Mt, rhs)", data: cumGap, yAxisID: "yR",
+          borderColor: "#4da6ff", borderWidth: 2, pointRadius: 0, tension: 0.3,
+          fill: false, borderDash: [5,3], order: 0 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: "index", intersect: false },
+      plugins: {
+        legend: { labels: { color: "#5a7a9a", font: { size: 10 }, boxWidth: 12, padding: 10 } },
+        tooltip: { backgroundColor: "#0f2038", titleColor: "#d4e5f5", bodyColor: "#5a7a9a",
+          borderColor: "#1e3d6e", borderWidth: 1 }
+      },
+      scales: {
+        x: { ticks: { color: "#5a7a9a", font:{size:9}, maxTicksLimit: 18 },
+             grid: { color: "rgba(30,61,110,.3)" } },
+        yL: { position: "left",
+              ticks: { color: "#5a7a9a", font:{size:9}, callback: v => v.toFixed(1)+" Mt" },
+              grid: { color: "rgba(30,61,110,.3)" } },
+        yR: { position: "right",
+              ticks: { color: "#4da6ff", font:{size:9}, callback: v => v.toFixed(0)+" Mt" },
+              grid: { drawOnChartArea: false } }
+      }
+    }
+  });
+}
+
+function drawSpotChart(history) {
+  if (_chart2) { _chart2.destroy(); _chart2 = null; }
+  const labels = history.map(h => h.period);
+  const spots  = history.map(h => h.hrc_spot);
+
+  _chart2 = new Chart(document.getElementById("chart-spot").getContext("2d"), {
+    data: {
+      labels,
+      datasets: [
+        { type: "line", label: "Argus HRC Spot €/t", data: spots, yAxisID: "yL",
+          borderColor: "#4da6ff", borderWidth: 2, pointRadius: 0, tension: 0.3,
+          fill: { target: "origin", above: "rgba(77,166,255,.05)", below: "rgba(77,166,255,.05)" } },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: "index", intersect: false },
+      plugins: {
+        legend: { labels: { color: "#5a7a9a", font:{size:10}, boxWidth: 12, padding: 10 } },
+        tooltip: { backgroundColor: "#0f2038", titleColor: "#d4e5f5", bodyColor: "#5a7a9a",
+          borderColor: "#1e3d6e", borderWidth: 1,
+          callbacks: { label: ctx => " €" + (ctx.raw || 0).toFixed(0) + "/t" } }
+      },
+      scales: {
+        x: { ticks: { color: "#5a7a9a", font:{size:9}, maxTicksLimit: 18 },
+             grid: { color: "rgba(30,61,110,.3)" } },
+        yL: { position: "left",
+              ticks: { color: "#5a7a9a", font:{size:9}, callback: v => "€"+v },
+              grid: { color: "rgba(30,61,110,.3)" } }
+      }
+    }
+  });
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function fmtScore(v) {
+  if (v == null) return "—";
+  return (v >= 0 ? "+" : "") + v.toFixed(3);
+}
+function fmtGap(v) {
+  if (v == null) return "—";
+  return (v >= 0 ? "+" : "") + v.toFixed(3);
+}
+function scoreColor(v) {
+  if (v == null) return "var(--muted)";
+  return v > 0.3 ? "var(--buy)" : v < -0.3 ? "var(--sell)" : "var(--flat)";
+}
+
+// ─── Boot: detect local server, then load ─────────────────────────────────────
+fetch("/api/manual", { method: "GET" })
+  .then(r => { SERVER_MODE = r.ok; })
+  .catch(() => { SERVER_MODE = false; })
+  .finally(refresh);
+</script>
+</body>
+</html>

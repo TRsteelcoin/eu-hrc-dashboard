@@ -1,0 +1,680 @@
+{
+  "as_of": "2026-04",
+  "generated": "2026-07-03T14:56:04.444524",
+  "direction": "BUY",
+  "arrow": "\u25b2",
+  "composite": 0.6,
+  "signals": {
+    "SA": {
+      "label": "NEUTRAL \u2192 (3M-avg gap: -0.082 Mt/mo)",
+      "score": 0.0,
+      "weight": 0.4,
+      "gap_latest_mt": -0.081,
+      "gap_3m_ma": -0.082
+    },
+    "SB": {
+      "label": "LEAN \u25b2 (cumulative: -7.7 Mt vs Jan-2019 baseline)",
+      "score": 1.0,
+      "weight": 0.35,
+      "cumulative_gap_mt": -7.7
+    },
+    "SC": {
+      "label": "CONTANGO \u25b2 (+11.1% T+6M vs spot)",
+      "score": 1.0,
+      "weight": 0.25,
+      "t6m_price": null,
+      "t6m_pct": 0.111,
+      "slope_annual": 16.0
+    }
+  },
+  "market": {
+    "hrc_spot": null,
+    "curve_as_of": "2026-07-03",
+    "curve_source": "ACTUAL \u2014 CME live",
+    "ehr_curve": {}
+  },
+  "annual_context": {
+    "2022": {
+      "gap_mt": -2.62,
+      "signal": "Destock \u25bc",
+      "label": "ACTUAL \u2014 Eurofer"
+    },
+    "2023": {
+      "gap_mt": -8.45,
+      "signal": "Destock \u25bc",
+      "label": "ACTUAL \u2014 Eurofer"
+    },
+    "2024": {
+      "gap_mt": -4.36,
+      "signal": "Destock \u25bc",
+      "label": "ACTUAL \u2014 Eurofer"
+    },
+    "2025": {
+      "gap_mt": -4.53,
+      "signal": "Destock \u25bc",
+      "label": "ACTUAL \u2014 Eurofer"
+    },
+    "2026E": {
+      "gap_mt": -0.93,
+      "signal": "Neutral \u2192",
+      "label": "EST \u2014 YTD annualised"
+    }
+  },
+  "market_notes": {
+    "supply": [
+      {
+        "date": "2026-06-25",
+        "text": "Tata Steel IJmuiden (NL): DSP offline, chromium emissions issue",
+        "label": "ACTUAL \u2014 news"
+      },
+      {
+        "date": "2026-06-25",
+        "text": "Acciaierie d'Italia (Taranto): ramping toward 4Mt/yr; BF1 under judicial seizure",
+        "label": "ACTUAL \u2014 news"
+      },
+      {
+        "date": "2026-06-25",
+        "text": "German rail disruption affecting Salzgitter + ArcelorMittal raw material supply",
+        "label": "ACTUAL \u2014 news"
+      },
+      {
+        "date": "2026-06-25",
+        "text": "ArcelorMittal EU: Reims + Denain closed",
+        "label": "ACTUAL \u2014 news"
+      }
+    ],
+    "regulatory": [
+      {
+        "date": "2026-07-01",
+        "text": "New safeguard regime live: 18.3Mt/yr quota (-47% vs 2024), 50% OOQ duty, 30 product categories, quarterly managed",
+        "label": "ACTUAL \u2014 EU Official Journal"
+      },
+      {
+        "date": "2026-06-25",
+        "text": "Apr 2026 imports +83% vs 2025 avg (safeguard front-loading)",
+        "label": "USER-PROVIDED"
+      },
+      {
+        "date": "2026-06-25",
+        "text": "Oct 2026: country of melt & pour ID required",
+        "label": "ACTUAL \u2014 EU Official Journal"
+      },
+      {
+        "date": "2026-06-25",
+        "text": "CBAM adds compliance cost to imports (increasing from 2026)",
+        "label": "ACTUAL"
+      }
+    ],
+    "risks": [
+      {
+        "date": "2026-06-25",
+        "text": "Safeguard front-loading (Apr +83%) may overstate apparent demand and compress post-July apparent AC as pre-buying unwinds",
+        "direction": "down"
+      },
+      {
+        "date": "2026-06-25",
+        "text": "Jul 2026 regime change reduces quota but OOQ duty uncertainty may delay buyer commitment",
+        "direction": "down"
+      },
+      {
+        "date": "2026-06-25",
+        "text": "Auto sector (39% weight) \u2014 key watch; no confirmed volume recovery yet",
+        "direction": "down"
+      },
+      {
+        "date": "2026-06-25",
+        "text": "Lean stock position means any demand recovery amplifies price quickly",
+        "direction": "up"
+      },
+      {
+        "date": "2026-06-25",
+        "text": "Supply disruptions (Tata IJmuiden, German rail) support near-term prices",
+        "direction": "up"
+      }
+    ]
+  },
+  "report_text": "",
+  "history": [
+    {
+      "period": "2021-05",
+      "gap_mt": 0.9258,
+      "cumulative_gap_mt": 6.211,
+      "apparent_mt": 6.6788,
+      "real_mt": 5.753,
+      "gap_3m_ma": 0.9683,
+      "hrc_spot": null
+    },
+    {
+      "period": "2021-06",
+      "gap_mt": 0.9575,
+      "cumulative_gap_mt": 7.169,
+      "apparent_mt": 6.9076,
+      "real_mt": 5.9501,
+      "gap_3m_ma": 0.9426,
+      "hrc_spot": null
+    },
+    {
+      "period": "2021-07",
+      "gap_mt": 0.9241,
+      "cumulative_gap_mt": 8.093,
+      "apparent_mt": 6.6664,
+      "real_mt": 5.7423,
+      "gap_3m_ma": 0.9358,
+      "hrc_spot": null
+    },
+    {
+      "period": "2021-08",
+      "gap_mt": 0.681,
+      "cumulative_gap_mt": 8.774,
+      "apparent_mt": 4.913,
+      "real_mt": 4.232,
+      "gap_3m_ma": 0.8542,
+      "hrc_spot": null
+    },
+    {
+      "period": "2021-09",
+      "gap_mt": 0.9302,
+      "cumulative_gap_mt": 9.704,
+      "apparent_mt": 6.7105,
+      "real_mt": 5.7803,
+      "gap_3m_ma": 0.8451,
+      "hrc_spot": null
+    },
+    {
+      "period": "2021-10",
+      "gap_mt": 0.969,
+      "cumulative_gap_mt": 10.673,
+      "apparent_mt": 6.9905,
+      "real_mt": 6.0215,
+      "gap_3m_ma": 0.8601,
+      "hrc_spot": null
+    },
+    {
+      "period": "2021-11",
+      "gap_mt": 1.0227,
+      "cumulative_gap_mt": 11.696,
+      "apparent_mt": 7.3777,
+      "real_mt": 6.355,
+      "gap_3m_ma": 0.974,
+      "hrc_spot": null
+    },
+    {
+      "period": "2021-12",
+      "gap_mt": 0.8906,
+      "cumulative_gap_mt": 12.586,
+      "apparent_mt": 6.4252,
+      "real_mt": 5.5346,
+      "gap_3m_ma": 0.9608,
+      "hrc_spot": null
+    },
+    {
+      "period": "2022-01",
+      "gap_mt": -0.1907,
+      "cumulative_gap_mt": 12.396,
+      "apparent_mt": 4.995,
+      "real_mt": 5.1857,
+      "gap_3m_ma": 0.5742,
+      "hrc_spot": null
+    },
+    {
+      "period": "2022-02",
+      "gap_mt": -0.2094,
+      "cumulative_gap_mt": 12.186,
+      "apparent_mt": 5.4833,
+      "real_mt": 5.6927,
+      "gap_3m_ma": 0.1635,
+      "hrc_spot": null
+    },
+    {
+      "period": "2022-03",
+      "gap_mt": -0.221,
+      "cumulative_gap_mt": 11.965,
+      "apparent_mt": 5.7883,
+      "real_mt": 6.0093,
+      "gap_3m_ma": -0.207,
+      "hrc_spot": null
+    },
+    {
+      "period": "2022-04",
+      "gap_mt": -0.2112,
+      "cumulative_gap_mt": 11.754,
+      "apparent_mt": 5.5327,
+      "real_mt": 5.7439,
+      "gap_3m_ma": -0.2139,
+      "hrc_spot": null
+    },
+    {
+      "period": "2022-05",
+      "gap_mt": -0.2218,
+      "cumulative_gap_mt": 11.532,
+      "apparent_mt": 5.8082,
+      "real_mt": 6.0299,
+      "gap_3m_ma": -0.218,
+      "hrc_spot": null
+    },
+    {
+      "period": "2022-06",
+      "gap_mt": -0.2314,
+      "cumulative_gap_mt": 11.301,
+      "apparent_mt": 6.0597,
+      "real_mt": 6.291,
+      "gap_3m_ma": -0.2215,
+      "hrc_spot": null
+    },
+    {
+      "period": "2022-07",
+      "gap_mt": -0.2189,
+      "cumulative_gap_mt": 11.082,
+      "apparent_mt": 5.7342,
+      "real_mt": 5.9531,
+      "gap_3m_ma": -0.224,
+      "hrc_spot": null
+    },
+    {
+      "period": "2022-08",
+      "gap_mt": -0.1734,
+      "cumulative_gap_mt": 10.909,
+      "apparent_mt": 4.5411,
+      "real_mt": 4.7145,
+      "gap_3m_ma": -0.2079,
+      "hrc_spot": null
+    },
+    {
+      "period": "2022-09",
+      "gap_mt": -0.2415,
+      "cumulative_gap_mt": 10.667,
+      "apparent_mt": 6.3262,
+      "real_mt": 6.5677,
+      "gap_3m_ma": -0.2113,
+      "hrc_spot": null
+    },
+    {
+      "period": "2022-10",
+      "gap_mt": -0.2388,
+      "cumulative_gap_mt": 10.428,
+      "apparent_mt": 6.2557,
+      "real_mt": 6.4946,
+      "gap_3m_ma": -0.2179,
+      "hrc_spot": null
+    },
+    {
+      "period": "2022-11",
+      "gap_mt": -0.249,
+      "cumulative_gap_mt": 10.179,
+      "apparent_mt": 6.5213,
+      "real_mt": 6.7703,
+      "gap_3m_ma": -0.2431,
+      "hrc_spot": null
+    },
+    {
+      "period": "2022-12",
+      "gap_mt": -0.2128,
+      "cumulative_gap_mt": 9.966,
+      "apparent_mt": 5.5747,
+      "real_mt": 5.7875,
+      "gap_3m_ma": -0.2335,
+      "hrc_spot": null
+    },
+    {
+      "period": "2023-01",
+      "gap_mt": -0.6179,
+      "cumulative_gap_mt": 9.349,
+      "apparent_mt": 4.8674,
+      "real_mt": 5.4852,
+      "gap_3m_ma": -0.3599,
+      "hrc_spot": null
+    },
+    {
+      "period": "2023-02",
+      "gap_mt": -0.7022,
+      "cumulative_gap_mt": 8.646,
+      "apparent_mt": 5.5322,
+      "real_mt": 6.2344,
+      "gap_3m_ma": -0.511,
+      "hrc_spot": null
+    },
+    {
+      "period": "2023-03",
+      "gap_mt": -0.7748,
+      "cumulative_gap_mt": 7.872,
+      "apparent_mt": 6.1041,
+      "real_mt": 6.879,
+      "gap_3m_ma": -0.6983,
+      "hrc_spot": null
+    },
+    {
+      "period": "2023-04",
+      "gap_mt": -0.7044,
+      "cumulative_gap_mt": 7.167,
+      "apparent_mt": 5.5492,
+      "real_mt": 6.2536,
+      "gap_3m_ma": -0.7271,
+      "hrc_spot": null
+    },
+    {
+      "period": "2023-05",
+      "gap_mt": -0.7374,
+      "cumulative_gap_mt": 6.43,
+      "apparent_mt": 5.8088,
+      "real_mt": 6.5462,
+      "gap_3m_ma": -0.7389,
+      "hrc_spot": null
+    },
+    {
+      "period": "2023-06",
+      "gap_mt": -0.7487,
+      "cumulative_gap_mt": 5.681,
+      "apparent_mt": 5.8979,
+      "real_mt": 6.6466,
+      "gap_3m_ma": -0.7302,
+      "hrc_spot": null
+    },
+    {
+      "period": "2023-07",
+      "gap_mt": -0.7001,
+      "cumulative_gap_mt": 4.981,
+      "apparent_mt": 5.5156,
+      "real_mt": 6.2157,
+      "gap_3m_ma": -0.7287,
+      "hrc_spot": null
+    },
+    {
+      "period": "2023-08",
+      "gap_mt": -0.5502,
+      "cumulative_gap_mt": 4.431,
+      "apparent_mt": 4.3342,
+      "real_mt": 4.8844,
+      "gap_3m_ma": -0.6663,
+      "hrc_spot": null
+    },
+    {
+      "period": "2023-09",
+      "gap_mt": -0.7513,
+      "cumulative_gap_mt": 3.679,
+      "apparent_mt": 5.919,
+      "real_mt": 6.6703,
+      "gap_3m_ma": -0.6672,
+      "hrc_spot": null
+    },
+    {
+      "period": "2023-10",
+      "gap_mt": -0.7489,
+      "cumulative_gap_mt": 2.931,
+      "apparent_mt": 5.8999,
+      "real_mt": 6.6488,
+      "gap_3m_ma": -0.6835,
+      "hrc_spot": null
+    },
+    {
+      "period": "2023-11",
+      "gap_mt": -0.7637,
+      "cumulative_gap_mt": 2.167,
+      "apparent_mt": 6.0167,
+      "real_mt": 6.7804,
+      "gap_3m_ma": -0.7546,
+      "hrc_spot": null
+    },
+    {
+      "period": "2023-12",
+      "gap_mt": -0.6533,
+      "cumulative_gap_mt": 1.514,
+      "apparent_mt": 5.1464,
+      "real_mt": 5.7997,
+      "gap_3m_ma": -0.722,
+      "hrc_spot": null
+    },
+    {
+      "period": "2024-01",
+      "gap_mt": -0.3243,
+      "cumulative_gap_mt": 1.189,
+      "apparent_mt": 4.9958,
+      "real_mt": 5.3201,
+      "gap_3m_ma": -0.5804,
+      "hrc_spot": null
+    },
+    {
+      "period": "2024-02",
+      "gap_mt": -0.3654,
+      "cumulative_gap_mt": 0.824,
+      "apparent_mt": 5.6304,
+      "real_mt": 5.9959,
+      "gap_3m_ma": -0.4477,
+      "hrc_spot": null
+    },
+    {
+      "period": "2024-03",
+      "gap_mt": -0.3994,
+      "cumulative_gap_mt": 0.424,
+      "apparent_mt": 6.1538,
+      "real_mt": 6.5532,
+      "gap_3m_ma": -0.363,
+      "hrc_spot": null
+    },
+    {
+      "period": "2024-04",
+      "gap_mt": -0.3705,
+      "cumulative_gap_mt": 0.054,
+      "apparent_mt": 5.7084,
+      "real_mt": 6.0789,
+      "gap_3m_ma": -0.3784,
+      "hrc_spot": null
+    },
+    {
+      "period": "2024-05",
+      "gap_mt": -0.3638,
+      "cumulative_gap_mt": -0.31,
+      "apparent_mt": 5.6053,
+      "real_mt": 5.9691,
+      "gap_3m_ma": -0.3779,
+      "hrc_spot": null
+    },
+    {
+      "period": "2024-06",
+      "gap_mt": -0.3865,
+      "cumulative_gap_mt": -0.696,
+      "apparent_mt": 5.9556,
+      "real_mt": 6.3421,
+      "gap_3m_ma": -0.3736,
+      "hrc_spot": null
+    },
+    {
+      "period": "2024-07",
+      "gap_mt": -0.3562,
+      "cumulative_gap_mt": -1.053,
+      "apparent_mt": 5.4874,
+      "real_mt": 5.8436,
+      "gap_3m_ma": -0.3688,
+      "hrc_spot": null
+    },
+    {
+      "period": "2024-08",
+      "gap_mt": -0.2908,
+      "cumulative_gap_mt": -1.343,
+      "apparent_mt": 4.4798,
+      "real_mt": 4.7706,
+      "gap_3m_ma": -0.3445,
+      "hrc_spot": null
+    },
+    {
+      "period": "2024-09",
+      "gap_mt": -0.3878,
+      "cumulative_gap_mt": -1.731,
+      "apparent_mt": 5.9746,
+      "real_mt": 6.3624,
+      "gap_3m_ma": -0.3449,
+      "hrc_spot": null
+    },
+    {
+      "period": "2024-10",
+      "gap_mt": -0.3878,
+      "cumulative_gap_mt": -2.119,
+      "apparent_mt": 5.9754,
+      "real_mt": 6.3633,
+      "gap_3m_ma": -0.3555,
+      "hrc_spot": null
+    },
+    {
+      "period": "2024-11",
+      "gap_mt": -0.3988,
+      "cumulative_gap_mt": -2.518,
+      "apparent_mt": 6.1437,
+      "real_mt": 6.5424,
+      "gap_3m_ma": -0.3915,
+      "hrc_spot": null
+    },
+    {
+      "period": "2024-12",
+      "gap_mt": -0.3303,
+      "cumulative_gap_mt": -2.848,
+      "apparent_mt": 5.0897,
+      "real_mt": 5.4201,
+      "gap_3m_ma": -0.3723,
+      "hrc_spot": null
+    },
+    {
+      "period": "2025-01",
+      "gap_mt": -0.3331,
+      "cumulative_gap_mt": -3.181,
+      "apparent_mt": 4.9427,
+      "real_mt": 5.2758,
+      "gap_3m_ma": -0.3541,
+      "hrc_spot": null
+    },
+    {
+      "period": "2025-02",
+      "gap_mt": -0.3648,
+      "cumulative_gap_mt": -3.546,
+      "apparent_mt": 5.4138,
+      "real_mt": 5.7786,
+      "gap_3m_ma": -0.3427,
+      "hrc_spot": null
+    },
+    {
+      "period": "2025-03",
+      "gap_mt": -0.4162,
+      "cumulative_gap_mt": -3.962,
+      "apparent_mt": 6.175,
+      "real_mt": 6.5912,
+      "gap_3m_ma": -0.3714,
+      "hrc_spot": null
+    },
+    {
+      "period": "2025-04",
+      "gap_mt": -0.3804,
+      "cumulative_gap_mt": -4.343,
+      "apparent_mt": 5.6438,
+      "real_mt": 6.0242,
+      "gap_3m_ma": -0.3871,
+      "hrc_spot": null
+    },
+    {
+      "period": "2025-05",
+      "gap_mt": -0.3892,
+      "cumulative_gap_mt": -4.732,
+      "apparent_mt": 5.7745,
+      "real_mt": 6.1636,
+      "gap_3m_ma": -0.3953,
+      "hrc_spot": null
+    },
+    {
+      "period": "2025-06",
+      "gap_mt": -0.4061,
+      "cumulative_gap_mt": -5.138,
+      "apparent_mt": 6.0264,
+      "real_mt": 6.4326,
+      "gap_3m_ma": -0.3919,
+      "hrc_spot": null
+    },
+    {
+      "period": "2025-07",
+      "gap_mt": -0.3789,
+      "cumulative_gap_mt": -5.517,
+      "apparent_mt": 5.6226,
+      "real_mt": 6.0015,
+      "gap_3m_ma": -0.3914,
+      "hrc_spot": null
+    },
+    {
+      "period": "2025-08",
+      "gap_mt": -0.2922,
+      "cumulative_gap_mt": -5.809,
+      "apparent_mt": 4.3363,
+      "real_mt": 4.6286,
+      "gap_3m_ma": -0.3591,
+      "hrc_spot": null
+    },
+    {
+      "period": "2025-09",
+      "gap_mt": -0.4039,
+      "cumulative_gap_mt": -6.213,
+      "apparent_mt": 5.9937,
+      "real_mt": 6.3976,
+      "gap_3m_ma": -0.3583,
+      "hrc_spot": null
+    },
+    {
+      "period": "2025-10",
+      "gap_mt": -0.4019,
+      "cumulative_gap_mt": -6.615,
+      "apparent_mt": 5.9631,
+      "real_mt": 6.365,
+      "gap_3m_ma": -0.366,
+      "hrc_spot": null
+    },
+    {
+      "period": "2025-11",
+      "gap_mt": -0.4159,
+      "cumulative_gap_mt": -7.031,
+      "apparent_mt": 6.1718,
+      "real_mt": 6.5877,
+      "gap_3m_ma": -0.4072,
+      "hrc_spot": null
+    },
+    {
+      "period": "2025-12",
+      "gap_mt": -0.3514,
+      "cumulative_gap_mt": -7.382,
+      "apparent_mt": 5.2136,
+      "real_mt": 5.565,
+      "gap_3m_ma": -0.3897,
+      "hrc_spot": null
+    },
+    {
+      "period": "2026-01",
+      "gap_mt": -0.0689,
+      "cumulative_gap_mt": -7.451,
+      "apparent_mt": 5.0146,
+      "real_mt": 5.0836,
+      "gap_3m_ma": -0.2787,
+      "hrc_spot": null
+    },
+    {
+      "period": "2026-02",
+      "gap_mt": -0.077,
+      "cumulative_gap_mt": -7.528,
+      "apparent_mt": 5.5992,
+      "real_mt": 5.6762,
+      "gap_3m_ma": -0.1658,
+      "hrc_spot": null
+    },
+    {
+      "period": "2026-03",
+      "gap_mt": -0.088,
+      "cumulative_gap_mt": -7.616,
+      "apparent_mt": 6.404,
+      "real_mt": 6.492,
+      "gap_3m_ma": -0.078,
+      "hrc_spot": null
+    },
+    {
+      "period": "2026-04",
+      "gap_mt": -0.0808,
+      "cumulative_gap_mt": -7.697,
+      "apparent_mt": 5.8776,
+      "real_mt": 5.9584,
+      "gap_3m_ma": -0.0819,
+      "hrc_spot": null
+    }
+  ],
+  "public_variant": true
+}
