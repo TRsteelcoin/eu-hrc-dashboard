@@ -236,6 +236,15 @@ let _brief = null;         // daily analyst brief markdown
 
 function refresh() {
   document.getElementById("spin").style.display = "inline-block";
+  // Encrypted deployment (GitHub Pages): data.enc present → password-protected bundle
+  fetch("./data.enc?t=" + Date.now())
+    .then(r => r.ok ? r.json() : null)
+    .catch(() => null)
+    .then(encObj => (encObj && encObj.ct) ? loadEncrypted(encObj) : loadPlain())
+    .finally(() => { document.getElementById("spin").style.display = "none"; });
+}
+
+function loadPlain() {
   const jobs = [
     fetch("./signal_output.json?t=" + Date.now())
       .then(r => { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); }),
@@ -244,13 +253,70 @@ function refresh() {
   if (SERVER_MODE) {
     jobs.push(fetch("/api/manual").then(r => r.ok ? r.json() : null).catch(() => null));
   }
-  Promise.all(jobs)
+  return Promise.all(jobs)
     .then(([d, brief, manual]) => { _brief = brief || null; _manual = manual || null; render(d); })
     .catch(e => {
       document.getElementById("content").innerHTML =
         `<div class="error-msg">Could not load signal_output.json.<br><span style="font-size:12px;color:#3d5a7a">${e.message}</span><br><br>Run <code>python model_v4.py</code> to generate the data file.</div>`;
-    })
-    .finally(() => { document.getElementById("spin").style.display = "none"; });
+    });
+}
+
+// ─── Encrypted mode (public deployment) ───────────────────────────────────────
+function b64ToBuf(s) {
+  const bin = atob(s); const buf = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+  return buf;
+}
+
+async function decryptBundle(encObj, password) {
+  const te = new TextEncoder();
+  const keyMaterial = await crypto.subtle.importKey("raw", te.encode(password), "PBKDF2", false, ["deriveKey"]);
+  const key = await crypto.subtle.deriveKey(
+    { name: "PBKDF2", salt: b64ToBuf(encObj.salt), iterations: encObj.iter, hash: "SHA-256" },
+    keyMaterial, { name: "AES-GCM", length: 256 }, false, ["decrypt"]);
+  const pt = await crypto.subtle.decrypt({ name: "AES-GCM", iv: b64ToBuf(encObj.iv) }, key, b64ToBuf(encObj.ct));
+  return JSON.parse(new TextDecoder().decode(pt));
+}
+
+async function loadEncrypted(encObj) {
+  const saved = localStorage.getItem("dash_pw");
+  if (saved) {
+    try {
+      const payload = await decryptBundle(encObj, saved);
+      _brief = payload.brief || null;
+      render(payload.signal);
+      return;
+    } catch (e) { localStorage.removeItem("dash_pw"); }
+  }
+  showPasswordGate(encObj);
+}
+
+function showPasswordGate(encObj, error) {
+  document.getElementById("content").innerHTML = `
+    <div style="max-width:360px;margin:80px auto;text-align:center">
+      <div class="card" style="padding:28px">
+        <div class="card-title">SteelCoin — Internal Dashboard</div>
+        <p style="font-size:12px;color:var(--muted);margin-bottom:14px">This dashboard contains licensed market data.<br>Enter the team password to continue.</p>
+        <input type="password" id="gate-pw" placeholder="Password" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;padding:9px 10px;margin-bottom:10px" onkeydown="if(event.key==='Enter')gateSubmit()">
+        ${error ? `<div style="color:var(--sell);font-size:11px;margin-bottom:8px">${error}</div>` : ""}
+        <button class="btn" style="width:100%;padding:8px" onclick="gateSubmit()">Unlock</button>
+      </div>
+    </div>`;
+  window._gateEnc = encObj;
+  setTimeout(() => document.getElementById("gate-pw")?.focus(), 100);
+}
+
+async function gateSubmit() {
+  const pw = document.getElementById("gate-pw").value;
+  if (!pw) return;
+  try {
+    const payload = await decryptBundle(window._gateEnc, pw);
+    localStorage.setItem("dash_pw", pw);
+    _brief = payload.brief || null;
+    render(payload.signal);
+  } catch (e) {
+    showPasswordGate(window._gateEnc, "Wrong password — try again.");
+  }
 }
 
 function shareUrl() {
@@ -452,7 +518,7 @@ function render(d) {
     </div>
 
     <div class="footer">
-      <strong>EU HRC NW Europe — Demand-Gap Signal Model v4</strong> &nbsp;·&nbsp; SteelCoin — public analysis view (licensed price data not shown)<br>
+      <strong>EU HRC NW Europe — Demand-Gap Signal Model v4</strong> &nbsp;·&nbsp; SteelCoin internal use only<br>
       Argus NW EU HRC EXW (USER-PROVIDED) &nbsp;·&nbsp; Eurostat sts_inpr_m + sts_copr_m (ACTUAL) &nbsp;·&nbsp; EHR CME (USER-PROVIDED) &nbsp;·&nbsp; Eurofer annual AC (ACTUAL)<br>
       Run <code>python model_v4.py</code> to refresh. &nbsp;·&nbsp; JSON generated: ${d.generated ? new Date(d.generated).toISOString().replace("T"," ").slice(0,16) : "unknown"}
     </div>`;
