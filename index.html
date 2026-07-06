@@ -219,7 +219,7 @@ body {
   <div class="topbar-right">
     <div class="pill" id="updated-pill">—</div>
     <button class="btn btn-share" onclick="shareUrl()">Share URL</button>
-    <button class="btn" onclick="refresh()"><span class="spinner" id="spin" style="display:none"></span> Refresh</button>
+    <button class="btn" id="btn-refresh" onclick="fullRefresh()"><span class="spinner" id="spin" style="display:none"></span> <span id="btn-refresh-label">Refresh</span></button>
   </div>
 </div>
 
@@ -318,6 +318,35 @@ async function gateSubmit() {
     showPasswordGate(window._gateEnc, "Wrong password — try again.");
   }
 }
+
+// Topbar button: on localhost this runs the FULL pipeline (live CME fetch →
+// signals → publish), then redraws. On the static/public site it redraws only.
+function fullRefresh() {
+  if (!SERVER_MODE) { refresh(); return; }
+  const btn = document.getElementById("btn-refresh");
+  const lbl = document.getElementById("btn-refresh-label");
+  btn.disabled = true;
+  lbl.textContent = "Updating… (~1 min)";
+  document.getElementById("spin").style.display = "inline-block";
+  fetch("/api/run", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" })
+    .then(r => r.json())
+    .then(r => {
+      if (!r.ok && r.error && r.error.includes("in progress")) {
+        lbl.textContent = "Already running…";
+        return new Promise(res => setTimeout(res, 20000));
+      }
+    })
+    .catch(() => {})
+    .finally(() => {
+      btn.disabled = false;
+      lbl.textContent = "Update Data";
+      document.getElementById("spin").style.display = "none";
+      refresh();
+    });
+}
+
+// Keep an open tab current: redraw from the latest generated data every 5 min
+setInterval(() => refresh(), 5 * 60 * 1000);
 
 function shareUrl() {
   navigator.clipboard.writeText(location.href).then(() => {
@@ -815,7 +844,10 @@ function scoreColor(v) {
 fetch("/api/manual", { method: "GET" })
   .then(r => { SERVER_MODE = r.ok; })
   .catch(() => { SERVER_MODE = false; })
-  .finally(refresh);
+  .finally(() => {
+    if (SERVER_MODE) document.getElementById("btn-refresh-label").textContent = "Update Data";
+    refresh();
+  });
 </script>
 </body>
 </html>
