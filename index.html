@@ -671,6 +671,19 @@ function analystPanelHtml(d) {
       </div>
     </div>
 
+    <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">
+      <div style="font-size:12px;font-weight:700;margin-bottom:8px">⬆ Upload Data File</div>
+      <div class="input-row">
+        <select id="upl-type">
+          <option value="argus">Argus spot file (NW EU HR.xlsx)</option>
+          <option value="ehr">EHR settlements (CME export, fallback)</option>
+        </select>
+        <input type="file" id="upl-file" accept=".xlsx,.xls" style="font-size:11px;color:var(--muted)">
+        <button class="btn-save" id="btn-upload" onclick="uploadFile()">Upload</button>
+      </div>
+      <div class="static-hint" id="upl-status">Replaces the manual file drop — the model uses the uploaded file on the next run.</div>
+    </div>
+
     <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);display:flex;gap:14px;align-items:center">
       <button class="btn-run" id="btn-run" onclick="runModel()">▶ Run Model</button>
       <span class="static-hint">Fetches live EHR curve from CME (~30s, Chrome opens briefly), recomputes signals, updates this page + Excel.</span>
@@ -733,6 +746,29 @@ function addNote() {
 
 function delNote(cat, i) {
   api("/api/note/delete", { category: cat, index: i }).then(r => r.ok ? refresh() : alert(r.error || "Failed"));
+}
+
+function uploadFile() {
+  const inp = document.getElementById("upl-file");
+  const status = document.getElementById("upl-status");
+  if (!inp.files.length) { alert("Please choose a file first"); return; }
+  const btn = document.getElementById("btn-upload");
+  btn.disabled = true;
+  status.textContent = "Uploading…";
+  const fd = new FormData();
+  fd.append("type", document.getElementById("upl-type").value);
+  fd.append("file", inp.files[0]);
+  fetch("/api/upload", { method: "POST", body: fd })
+    .then(r => r.json())
+    .then(r => {
+      if (!r.ok) { status.textContent = "❌ " + (r.error || "upload failed"); return; }
+      status.textContent = `✅ ${r.label}: ${r.rows} rows` +
+        (r.first ? ` (${r.first} → ${r.last})` : "") +
+        " — click ▶ Run Model or Update Data to apply.";
+      inp.value = "";
+    })
+    .catch(e => { status.textContent = "❌ " + e.message; })
+    .finally(() => { document.getElementById("btn-upload").disabled = false; });
 }
 
 function updateBriefing() {
