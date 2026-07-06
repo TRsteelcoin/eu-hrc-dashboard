@@ -571,8 +571,14 @@ function briefHtml() {
   } catch (e) {
     html = `<pre style="white-space:pre-wrap">${esc(_brief)}</pre>`;
   }
+  const btn = SERVER_MODE
+    ? `<button class="btn" id="btn-brief" onclick="updateBriefing()">✎ Update Briefing</button>`
+    : "";
   return `<div class="card" style="margin-bottom:16px;border-color:var(--accent)">
-    <div class="card-title" style="color:var(--accent2)">Daily Analyst Brief</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div class="card-title" style="margin-bottom:0;color:var(--accent2)">Daily Analyst Brief</div>
+      ${btn}
+    </div>
     <div class="brief-body">${html}</div>
   </div>`;
 }
@@ -600,8 +606,14 @@ function reportHtml(d) {
         <pre style="white-space:pre-wrap;font-family:ui-monospace,monospace;font-size:11px;line-height:1.6;color:var(--text);background:#060e1c;border:1px solid var(--border);border-radius:6px;padding:12px;margin-top:6px;overflow-x:auto">${esc(s.body)}</pre>
       </details>`).join("")
     : `<pre style="white-space:pre-wrap;font-family:ui-monospace,monospace;font-size:11px;line-height:1.6;color:var(--text);background:#060e1c;border:1px solid var(--border);border-radius:6px;padding:12px;overflow-x:auto">${esc(txt)}</pre>`;
+  const btn = SERVER_MODE
+    ? `<button class="btn" onclick="fullRefresh()">▶ Update Report</button>`
+    : "";
   return `<div class="card" style="margin-bottom:16px">
-    <div class="card-title">Full Analyst Report — generated ${d.generated ? new Date(d.generated).toLocaleString("de-DE", {day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"}) : ""}</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div class="card-title" style="margin-bottom:0">Full Analyst Report — generated ${d.generated ? new Date(d.generated).toLocaleString("de-DE", {day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"}) : ""}</div>
+      ${btn}
+    </div>
     ${inner}
   </div>`;
 }
@@ -721,6 +733,24 @@ function addNote() {
 
 function delNote(cat, i) {
   api("/api/note/delete", { category: cat, index: i }).then(r => r.ok ? refresh() : alert(r.error || "Failed"));
+}
+
+function updateBriefing() {
+  const btn = document.getElementById("btn-brief");
+  btn.disabled = true;
+  btn.textContent = "Researching… (~2–4 min)";
+  fetch("/api/brief/generate", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" })
+    .then(r => r.json())
+    .then(r => {
+      if (!r.ok) { alert("Briefing failed: " + (r.error || "unknown")); return; }
+      // Brief + notes are written; model re-run and publish happen in the background
+      refresh();
+    })
+    .catch(e => alert("Briefing failed: " + e.message))
+    .finally(() => {
+      const b = document.getElementById("btn-brief");
+      if (b) { b.disabled = false; b.textContent = "✎ Update Briefing"; }
+    });
 }
 
 function runModel() {
