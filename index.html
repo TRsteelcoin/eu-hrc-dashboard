@@ -621,10 +621,25 @@ function reportHtml(d) {
 // ─── Analyst input panel (SERVER_MODE only) ───────────────────────────────────
 function analystPanelHtml(d) {
   if (!SERVER_MODE) {
-    return `<div class="card" style="margin-bottom:16px">
-      <div class="card-title">Analyst Input</div>
-      <div class="static-hint">Read-only mode. Start the local server for manual inputs:
-      <code>.venv/bin/python server.py</code> → <code>http://localhost:8642</code></div>
+    // Public deployment: colleagues upload files straight into the private
+    // repo (data/uploads/incoming/) via the GitHub API. The backend server
+    // pulls every 5 min, MERGES rows into the append-only history (existing
+    // data is never deleted), re-runs the model and republishes.
+    const hasToken = !!localStorage.getItem("gh_token");
+    return `<div class="card" style="margin-bottom:16px;border-color:var(--accent)">
+      <div class="card-title" style="color:var(--accent2)">Team Upload — Market Data</div>
+      <div class="input-row">
+        <select id="gh-upl-type">
+          <option value="argus">Argus spot export (.xlsx)</option>
+          <option value="ehr">EHR settlements (.xlsx)</option>
+        </select>
+        <input type="file" id="gh-upl-file" accept=".xlsx,.xls" style="font-size:11px;color:var(--muted)">
+        <button class="btn-save" id="gh-upl-btn" onclick="ghUpload()">Upload</button>
+        <button class="btn-del" onclick="ghToken(true)" title="Change GitHub token">⚙</button>
+      </div>
+      <div class="static-hint" id="gh-upl-status">${hasToken
+        ? "New data is merged into the history within ~10 min — existing data is never deleted."
+        : "First time: click ⚙ and paste your GitHub token (fine-grained PAT, Contents read/write on eu-hrc-signal)."}</div>
     </div>`;
   }
   const today = new Date().toISOString().slice(0, 10);
@@ -681,7 +696,7 @@ function analystPanelHtml(d) {
         <input type="file" id="upl-file" accept=".xlsx,.xls" style="font-size:11px;color:var(--muted)">
         <button class="btn-save" id="btn-upload" onclick="uploadFile()">Upload</button>
       </div>
-      <div class="static-hint" id="upl-status">Replaces the manual file drop — the model uses the uploaded file on the next run.</div>
+      <div class="static-hint" id="upl-status">Merged into the append-only history — new dates are added, existing data is never deleted.</div>
     </div>
 
     <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);display:flex;gap:14px;align-items:center">
@@ -746,6 +761,65 @@ function addNote() {
 
 function delNote(cat, i) {
   api("/api/note/delete", { category: cat, index: i }).then(r => r.ok ? refresh() : alert(r.error || "Failed"));
+}
+
+// ─── Team upload via GitHub API (public/static deployment) ────────────────────
+const GH_REPO = "TRsteelcoin/eu-hrc-signal";
+
+function ghToken(force) {
+  let t = localStorage.getItem("gh_token");
+  if (!t || force) {
+    t = prompt("GitHub token (fine-grained PAT with Contents read/write on " + GH_REPO + "):", t || "");
+    if (t) localStorage.setItem("gh_token", t.trim());
+  }
+  return localStorage.getItem("gh_token");
+}
+
+function ghUpload() {
+  const inp = document.getElementById("gh-upl-file");
+  const status = document.getElementById("gh-upl-status");
+  if (!inp.files.length) { alert("Please choose a file first"); return; }
+  const token = ghToken(false);
+  if (!token) { status.textContent = "❌ No GitHub token set — click ⚙ first."; return; }
+
+  const type = document.getElementById("gh-upl-type").value;
+  const ts = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+  const path = `data/uploads/incoming/${ts}_${type}.xlsx`;   // unique name — nothing is ever overwritten
+  const btn = document.getElementById("gh-upl-btn");
+  btn.disabled = true;
+  status.textContent = "Uploading to the private repo…";
+
+  const reader = new FileReader();
+  reader.onload = () => {
+    const b64 = reader.result.split(",")[1];
+    fetch(`https://api.github.com/repos/${GH_REPO}/contents/${path}`, {
+      method: "PUT",
+      headers: {
+        "Authorization": "Bearer " + token,
+        "Accept": "application/vnd.github+json",
+      },
+      body: JSON.stringify({
+        message: `Data upload via dashboard: ${type} (${inp.files[0].name})`,
+        content: b64,
+        branch: "main",
+      }),
+    })
+      .then(r => r.json().then(j => ({ status: r.status, j })))
+      .then(({ status: st, j }) => {
+        if (st === 201) {
+          status.textContent = "✅ Uploaded. The backend merges it into the history and " +
+            "republishes within ~10 minutes (existing data is never deleted).";
+          inp.value = "";
+        } else if (st === 401 || st === 403) {
+          status.textContent = "❌ Token rejected — click ⚙ and check your token / repo access.";
+        } else {
+          status.textContent = "❌ GitHub error: " + (j.message || st);
+        }
+      })
+      .catch(e => { status.textContent = "❌ " + e.message; })
+      .finally(() => { document.getElementById("gh-upl-btn").disabled = false; });
+  };
+  reader.readAsDataURL(inp.files[0]);
 }
 
 function uploadFile() {
