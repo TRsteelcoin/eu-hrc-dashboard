@@ -218,6 +218,7 @@ body {
   </div>
   <div class="topbar-right">
     <div class="pill" id="updated-pill">—</div>
+    <button class="btn" id="btn-upnav" style="display:none" onclick="document.getElementById('team-upload')?.scrollIntoView({behavior:'smooth'})">⬆ Upload</button>
     <button class="btn btn-share" onclick="shareUrl()">Share URL</button>
     <button class="btn" id="btn-refresh" onclick="fullRefresh()"><span class="spinner" id="spin" style="display:none"></span> <span id="btn-refresh-label">Refresh</span></button>
   </div>
@@ -474,6 +475,8 @@ function render(d) {
       ${sigCards}
     </div>
 
+    ${SERVER_MODE ? "" : analystPanelHtml(d)}
+
     <div class="grid-mid">
       <div class="card">
         <div class="card-title">Monthly Gap & Cumulative Inventory (Apparent − Real Demand)</div>
@@ -514,7 +517,7 @@ function render(d) {
 
     ${reportHtml(d)}
 
-    ${analystPanelHtml(d)}
+    ${SERVER_MODE ? analystPanelHtml(d) : ""}
 
     <div class="card" style="margin-bottom:16px">
       <div class="card-title">Market Notes ${SERVER_MODE ? "(editable — feeds the model report)" : "(snapshot from last model run)"}</div>
@@ -626,8 +629,8 @@ function analystPanelHtml(d) {
     // pulls every 5 min, MERGES rows into the append-only history (existing
     // data is never deleted), re-runs the model and republishes.
     const hasToken = !!localStorage.getItem("gh_token");
-    return `<div class="card" style="margin-bottom:16px;border-color:var(--accent)">
-      <div class="card-title" style="color:var(--accent2)">Team Upload — Market Data</div>
+    return `<div class="card" id="team-upload" style="margin-bottom:16px;border-color:var(--accent)">
+      <div class="card-title" style="color:var(--accent2)">⬆ Team Upload — Market Data (Argus / EHR)</div>
       <div class="input-row">
         <select id="gh-upl-type">
           <option value="argus">Argus spot export (.xlsx)</option>
@@ -986,6 +989,7 @@ fetch("/api/manual", { method: "GET" })
   .catch(() => { SERVER_MODE = false; })
   .finally(() => {
     if (SERVER_MODE) document.getElementById("btn-refresh-label").textContent = "Update Data";
+    else document.getElementById("btn-upnav").style.display = "";
     refresh();
   });
 </script>
