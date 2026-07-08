@@ -234,6 +234,7 @@ let _chart1 = null, _chart2 = null;
 let SERVER_MODE = false;   // true when served by server.py (API available)
 let _manual = null;        // live manual_inputs.json when SERVER_MODE
 let _brief = null;         // daily analyst brief markdown
+let _uploadToken = null;   // team upload key from the encrypted bundle (no GitHub account needed)
 
 function refresh() {
   document.getElementById("spin").style.display = "inline-block";
@@ -285,6 +286,7 @@ async function loadEncrypted(encObj) {
     try {
       const payload = await decryptBundle(encObj, saved);
       _brief = payload.brief || null;
+      _uploadToken = payload.gh_upload_token || null;
       render(payload.signal);
       return;
     } catch (e) { localStorage.removeItem("dash_pw"); }
@@ -314,6 +316,7 @@ async function gateSubmit() {
     const payload = await decryptBundle(window._gateEnc, pw);
     localStorage.setItem("dash_pw", pw);
     _brief = payload.brief || null;
+    _uploadToken = payload.gh_upload_token || null;
     render(payload.signal);
   } catch (e) {
     showPasswordGate(window._gateEnc, "Wrong password — try again.");
@@ -628,7 +631,6 @@ function analystPanelHtml(d) {
     // repo (data/uploads/incoming/) via the GitHub API. The backend server
     // pulls every 5 min, MERGES rows into the append-only history (existing
     // data is never deleted), re-runs the model and republishes.
-    const hasToken = !!localStorage.getItem("gh_token");
     return `<div class="card" id="team-upload" style="margin-bottom:16px;border-color:var(--accent)">
       <div class="card-title" style="color:var(--accent2)">⬆ Team Upload — Market Data (Argus / EHR)</div>
       <div class="input-row">
@@ -638,11 +640,10 @@ function analystPanelHtml(d) {
         </select>
         <input type="file" id="gh-upl-file" accept=".xlsx,.xls" style="font-size:11px;color:var(--muted)">
         <button class="btn-save" id="gh-upl-btn" onclick="ghUpload()">Upload</button>
-        <button class="btn-del" onclick="ghToken(true)" title="Change GitHub token">⚙</button>
       </div>
-      <div class="static-hint" id="gh-upl-status">${hasToken
+      <div class="static-hint" id="gh-upl-status">${_uploadToken
         ? "New data is merged into the history within ~10 min — existing data is never deleted."
-        : "First time: click ⚙ and paste your GitHub token (fine-grained PAT, Contents read/write on eu-hrc-signal)."}</div>
+        : "Upload key not yet configured — ask Tobias (TEAM_UPLOAD_TOKEN)."}</div>
     </div>`;
   }
   const today = new Date().toISOString().slice(0, 10);
@@ -769,21 +770,14 @@ function delNote(cat, i) {
 // ─── Team upload via GitHub API (public/static deployment) ────────────────────
 const GH_REPO = "TRsteelcoin/eu-hrc-signal";
 
-function ghToken(force) {
-  let t = localStorage.getItem("gh_token");
-  if (!t || force) {
-    t = prompt("GitHub token (fine-grained PAT with Contents read/write on " + GH_REPO + "):", t || "");
-    if (t) localStorage.setItem("gh_token", t.trim());
-  }
-  return localStorage.getItem("gh_token");
-}
-
 function ghUpload() {
   const inp = document.getElementById("gh-upl-file");
   const status = document.getElementById("gh-upl-status");
   if (!inp.files.length) { alert("Please choose a file first"); return; }
-  const token = ghToken(false);
-  if (!token) { status.textContent = "❌ No GitHub token set — click ⚙ first."; return; }
+  // Upload key comes from the encrypted bundle — anyone who unlocked the
+  // dashboard with the team password can upload. No accounts needed.
+  const token = _uploadToken;
+  if (!token) { status.textContent = "❌ Upload key not configured — ask Tobias."; return; }
 
   const type = document.getElementById("gh-upl-type").value;
   const ts = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
@@ -814,7 +808,7 @@ function ghUpload() {
             "republishes within ~10 minutes (existing data is never deleted).";
           inp.value = "";
         } else if (st === 401 || st === 403) {
-          status.textContent = "❌ Token rejected — click ⚙ and check your token / repo access.";
+          status.textContent = "❌ Upload key expired or revoked — tell Tobias.";
         } else {
           status.textContent = "❌ GitHub error: " + (j.message || st);
         }
