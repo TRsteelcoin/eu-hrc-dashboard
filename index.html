@@ -66,7 +66,7 @@ body {
 /* LAYOUT */
 .main { max-width: 1280px; margin: 0 auto; padding: 24px 20px; }
 .grid-top    { display: grid; grid-template-columns: 260px 1fr; gap: 16px; margin-bottom: 16px; }
-.grid-signals{ display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
+.grid-signals{ display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
 .grid-mid    { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 16px; }
 .grid-bot    { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
 
@@ -368,7 +368,7 @@ function render(d) {
   const spot   = d.market?.hrc_spot;
   const asOf   = d.as_of;
   const sigs   = d.signals || {};
-  const SA = sigs.SA || {}, SB = sigs.SB || {}, SC = sigs.SC || {};
+  const SA = sigs.SA || {}, SB = sigs.SB || {}, SC = sigs.SC || {}, SD = sigs.SD || {};
 
   // Pills
   document.getElementById("period-pill").textContent = "As of " + asOf;
@@ -426,7 +426,9 @@ function render(d) {
     { key: "SB", name: "SB — Inventory Level", s: SB,
       detail: `Cumulative gap: ${cum != null ? fmtGap(cum)+" Mt" : "—"}<br>Lean &lt; −3 Mt  /  Bloated &gt; +3 Mt  /  Weight: 35%` },
     { key: "SC", name: "SC — Forward Curve", s: SC,
-      detail: `T+6M: ${SC.t6m_price != null ? "€"+SC.t6m_price.toFixed(0)+"/t" : "—"} (${SC.t6m_pct != null ? (SC.t6m_pct>0?"+":"")+(SC.t6m_pct*100).toFixed(1)+"%" : "—"})<br>Curve slope: ${SC.slope_annual != null ? (SC.slope_annual>0?"+":"")+SC.slope_annual.toFixed(1)+"€/t per yr" : "—"}  /  Weight: 25%` },
+      detail: `T+6M: ${SC.t6m_price != null ? "€"+SC.t6m_price.toFixed(0)+"/t" : "—"} (${SC.t6m_pct != null ? (SC.t6m_pct>0?"+":"")+(SC.t6m_pct*100).toFixed(1)+"%" : "—"})<br>Curve slope: ${SC.slope_annual != null ? (SC.slope_annual>0?"+":"")+SC.slope_annual.toFixed(1)+"€/t per yr" : "—"}  /  Weight: ${((SC.weight||0)*100).toFixed(0)}%` },
+    { key: "SD", name: "SD — Italy Lead", s: SD,
+      detail: `Italy EXW 2w momentum: ${SD.italy_mom2w != null ? (SD.italy_mom2w>0?"+":"")+"€"+SD.italy_mom2w.toFixed(2) : "—"} (as of ${SD.asof || "—"})<br>Backtest hit 78% fwd 1-2w  /  Weight: ${((SD.weight||0)*100).toFixed(0)}%` },
   ];
 
   const sigCards = sigDefs.map(({ key, name, s, detail }) => {
@@ -511,7 +513,7 @@ function render(d) {
         </table>
         <div style="margin-top:12px;font-size:10px;color:var(--muted);line-height:1.6">
           Direction thresholds: &gt;+0.40 → BUY &nbsp;|&nbsp; &lt;−0.40 → SELL &nbsp;|&nbsp; else NEUTRAL<br>
-          SA gap thresholds: ±0.25 Mt/mo &nbsp;|&nbsp; SB level: ±3 Mt &nbsp;|&nbsp; SC curve: ±4%
+          SA gap: ±0.25 Mt/mo &nbsp;|&nbsp; SB level: ±3 Mt &nbsp;|&nbsp; SC curve: ±4% &nbsp;|&nbsp; SD Italy 2w-mom: ±€5
         </div>
       </div>
     </div>
@@ -537,15 +539,18 @@ function render(d) {
         <div><strong style="color:var(--text)">Apparent Demand</strong><br>
         Annual AC (Eurofer ACTUAL, 2018-2025) distributed monthly by Eurostat Wtd seasonal pattern.<br>
         Formula: AC_annual × (Wtd_month / Wtd_annual_avg) / 12.</div>
-        <div><strong style="color:var(--text)">SA — Inventory Flow (40%)</strong><br>
+        <div><strong style="color:var(--text)">SA — Inventory Flow (30%)</strong><br>
         Monthly gap = Apparent − Real, 3M-MA.<br>
         &gt;+0.25 Mt/mo → RESTOCK ▲ (+1) &nbsp;|&nbsp; &lt;−0.25 → DESTOCK ▼ (−1).</div>
-        <div><strong style="color:var(--text)">SB — Inventory Level (35%)</strong><br>
+        <div><strong style="color:var(--text)">SB — Inventory Level (30%)</strong><br>
         Cumulative gap from Jan-2019 baseline (implied stock position).<br>
         &lt;−3 Mt → LEAN ▲ (+1) &nbsp;|&nbsp; &gt;+3 Mt → BLOATED ▼ (−1).</div>
-        <div><strong style="color:var(--text)">SC — Forward Curve (25%)</strong><br>
+        <div><strong style="color:var(--text)">SC — Forward Curve (20%)</strong><br>
         EHR CME T+6M futures vs Argus spot.<br>
         &gt;+4% → CONTANGO ▲ (+1) &nbsp;|&nbsp; &lt;−4% → BACKWARDATION ▼ (−1).</div>
+        <div><strong style="color:var(--text)">SD — Italy Lead (20%)</strong><br>
+        Italy HRC EXW 2-week momentum (Italy leads NW by 1-2 weeks).<br>
+        &gt;+€5 → ▲ (+1) &nbsp;|&nbsp; &lt;−€5 → ▼ (−1). Backtest Jul23–Jul26: 78% hit fwd 1-2w, stable across years.</div>
         <div><strong style="color:var(--text)">Key Caveats</strong><br>
         Monthly apparent = EST (annual actual distributed seasonally; Comext monthly unavailable).<br>
         Apr-2026 imports +83% vs avg due to safeguard front-loading — may distort 2026 apparent.</div>
