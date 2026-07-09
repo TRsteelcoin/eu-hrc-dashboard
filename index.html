@@ -559,8 +559,8 @@ function render(d) {
 
     <div class="footer">
       <strong>EU HRC NW Europe — Demand-Gap Signal Model v4</strong> &nbsp;·&nbsp; SteelCoin internal use only<br>
-      Argus NW EU HRC EXW (USER-PROVIDED) &nbsp;·&nbsp; Eurostat sts_inpr_m + sts_copr_m (ACTUAL) &nbsp;·&nbsp; EHR CME (USER-PROVIDED) &nbsp;·&nbsp; Eurofer annual AC (ACTUAL)<br>
-      Run <code>python model_v4.py</code> to refresh. &nbsp;·&nbsp; JSON generated: ${d.generated ? new Date(d.generated).toISOString().replace("T"," ").slice(0,16) : "unknown"}
+      Argus NW EU HRC EXW (USER-PROVIDED) &nbsp;·&nbsp; Eurostat sts_inpr_m + sts_copr_m (ACTUAL) &nbsp;·&nbsp; EHR CME (${(d.market && d.market.curve_source) || "DO NOT KNOW"}) &nbsp;·&nbsp; Eurofer annual AC (ACTUAL)<br>
+      Auto-run 08:00 Mon–Fri &nbsp;·&nbsp; manual refresh via Run Model button &nbsp;·&nbsp; JSON generated: ${d.generated ? d.generated.replace("T"," ").slice(0,16) : "unknown"} (local)
     </div>`;
 
   // Draw charts
@@ -629,6 +629,17 @@ function reportHtml(d) {
   </div>`;
 }
 
+// ─── Upload ingest status (from the last model run) ───────────────────────────
+function ingestLogHtml(d) {
+  const esc = s => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const log = (d.ingest_log || []).slice().reverse();
+  if (!log.length) return "";
+  return `<div style="margin-top:8px;padding-top:6px;border-top:1px solid var(--border)">
+    <div style="font-size:11px;font-weight:700;margin-bottom:4px">Recent uploads — processing result (as of last model run)</div>
+    ${log.map(e => `<div class="static-hint" style="margin:1px 0">${e.ok ? "✅" : "❌"} ${esc((e.time || "").replace("T", " ").slice(0, 16))} · ${esc(e.file)} — ${esc(e.result)}</div>`).join("")}
+  </div>`;
+}
+
 // ─── Analyst input panel (SERVER_MODE only) ───────────────────────────────────
 function analystPanelHtml(d) {
   if (!SERVER_MODE) {
@@ -637,18 +648,20 @@ function analystPanelHtml(d) {
     // pulls every 5 min, MERGES rows into the append-only history (existing
     // data is never deleted), re-runs the model and republishes.
     return `<div class="card" id="team-upload" style="margin-bottom:16px;border-color:var(--accent)">
-      <div class="card-title" style="color:var(--accent2)">⬆ Team Upload — Market Data (Argus / EHR)</div>
+      <div class="card-title" style="color:var(--accent2)">⬆ Team Upload — Market Data &amp; Documents</div>
       <div class="input-row">
         <select id="gh-upl-type">
           <option value="argus">Price data — Argus, any layout (.xlsx)</option>
           <option value="ehr">EHR settlements (.xlsx)</option>
+          <option value="doc">Document — commentary/report (.pdf/.docx/.txt/.md)</option>
         </select>
-        <input type="file" id="gh-upl-file" accept=".xlsx,.xls" style="font-size:11px;color:var(--muted)">
+        <input type="file" id="gh-upl-file" accept=".xlsx,.xls,.pdf,.docx,.doc,.txt,.md" style="font-size:11px;color:var(--muted)">
         <button class="btn-save" id="gh-upl-btn" onclick="ghUpload()">Upload</button>
       </div>
       <div class="static-hint" id="gh-upl-status">${_uploadToken
-        ? "New data is merged into the history within ~10 min — existing data is never deleted."
+        ? "Excel prices are merged into the history within ~10 min (never deleted); documents are converted to text and feed the next daily brief."
         : "Upload key not yet configured — ask Tobias (TEAM_UPLOAD_TOKEN)."}</div>
+      ${ingestLogHtml(d)}
     </div>`;
   }
   const today = new Date().toISOString().slice(0, 10);
@@ -706,6 +719,7 @@ function analystPanelHtml(d) {
         <button class="btn-save" id="btn-upload" onclick="uploadFile()">Upload</button>
       </div>
       <div class="static-hint" id="upl-status">Merged into the append-only history — new dates are added, existing data is never deleted.</div>
+      ${ingestLogHtml(d)}
     </div>
 
     <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);display:flex;gap:14px;align-items:center">
@@ -784,9 +798,19 @@ function ghUpload() {
   const token = _uploadToken;
   if (!token) { status.textContent = "❌ Upload key not configured — ask Tobias."; return; }
 
-  const type = document.getElementById("gh-upl-type").value;
+  // Validate the real file type — the backend parses .xlsx/.xls as price data
+  // and converts documents to text; anything else would be silently unusable.
+  const fname = inp.files[0].name;
+  const ext = (fname.split(".").pop() || "").toLowerCase();
+  const PRICE_EXTS = ["xlsx", "xls"], DOC_EXTS = ["pdf", "docx", "doc", "txt", "md"];
+  if (!PRICE_EXTS.includes(ext) && !DOC_EXTS.includes(ext)) {
+    status.textContent = `❌ .${ext} is not supported — price data: .xlsx/.xls · documents: .pdf/.docx/.txt/.md`;
+    return;
+  }
+  const isDoc = DOC_EXTS.includes(ext);
+  const type = isDoc ? "doc" : document.getElementById("gh-upl-type").value;
   const ts = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
-  const path = `data/uploads/incoming/${ts}_${type}.xlsx`;   // unique name — nothing is ever overwritten
+  const path = `data/uploads/incoming/${ts}_${type}.${ext}`;   // unique name, real extension — nothing is ever overwritten
   const btn = document.getElementById("gh-upl-btn");
   btn.disabled = true;
   status.textContent = "Uploading to the private repo…";
@@ -809,8 +833,10 @@ function ghUpload() {
       .then(r => r.json().then(j => ({ status: r.status, j })))
       .then(({ status: st, j }) => {
         if (st === 201) {
-          status.textContent = "✅ Uploaded. The backend merges it into the history and " +
-            "republishes within ~10 minutes (existing data is never deleted).";
+          status.textContent = isDoc
+            ? "✅ Uploaded. The backend converts it to text within ~10 minutes; it feeds the next daily brief."
+            : "✅ Uploaded. The backend merges it into the history and " +
+              "republishes within ~10 minutes (existing data is never deleted).";
           inp.value = "";
         } else if (st === 401 || st === 403) {
           status.textContent = "❌ Upload key expired or revoked — tell Tobias.";
