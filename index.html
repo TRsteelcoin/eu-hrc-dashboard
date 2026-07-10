@@ -661,6 +661,17 @@ function analystPanelHtml(d) {
       <div class="static-hint" id="gh-upl-status">${_uploadToken
         ? "Excel prices are merged into the history within ~10 min (never deleted); documents are converted to text and feed the next daily brief."
         : "Upload key not yet configured — ask Tobias (TEAM_UPLOAD_TOKEN)."}</div>
+      <div class="input-row" style="margin-top:10px">
+        <select id="gh-print-series">
+          <option value="nw">NW EU HRC EXW (Argus daily)</option>
+          <option value="italy_exw">Italy HRC EXW</option>
+          <option value="italy_cif">Import cif Italy</option>
+        </select>
+        <input type="date" id="gh-print-date" value="${new Date().toISOString().slice(0, 10)}">
+        <input type="number" step="0.25" min="100" max="3000" id="gh-print-price" placeholder="€/t" style="width:90px">
+        <button class="btn-save" onclick="ghSubmitPrint()">Save print</button>
+      </div>
+      <div class="static-hint" id="gh-print-status">Or just enter today's index print — no Excel needed. Merged and recalculated like an upload; existing values are never overwritten.</div>
       ${ingestLogHtml(d)}
     </div>`;
   }
@@ -848,6 +859,44 @@ function ghUpload() {
       .finally(() => { document.getElementById("gh-upl-btn").disabled = false; });
   };
   reader.readAsDataURL(inp.files[0]);
+}
+
+function ghSubmitPrint() {
+  const status = document.getElementById("gh-print-status");
+  const token = _uploadToken;
+  if (!token) { status.textContent = "❌ Upload key not configured — ask Tobias."; return; }
+  const date = document.getElementById("gh-print-date").value;
+  const series = document.getElementById("gh-print-series").value;
+  const price = parseFloat(document.getElementById("gh-print-price").value);
+  if (!date || !isFinite(price)) { status.textContent = "❌ Need a date and a €/t value."; return; }
+  if (price < 100 || price > 3000) { status.textContent = "❌ Implausible value — expected 100–3000 €/t."; return; }
+  const ts = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+  status.textContent = "Submitting print…";
+  fetch(`https://api.github.com/repos/${GH_REPO}/contents/data/uploads/incoming/${ts}_print.json`, {
+    method: "PUT",
+    headers: {
+      "Authorization": "Bearer " + token,
+      "Accept": "application/vnd.github+json",
+    },
+    body: JSON.stringify({
+      message: `Manual print via dashboard: ${series} ${date}`,
+      content: btoa(JSON.stringify({ date, series, price })),
+      branch: "main",
+    }),
+  })
+    .then(r => r.json().then(j => ({ st: r.status, j })))
+    .then(({ st, j }) => {
+      if (st === 201) {
+        status.textContent = `✅ Print submitted (${series} ${date} = €${price}/t). ` +
+          `Merged and recalculated within ~10 minutes — verify under "Recent uploads".`;
+        document.getElementById("gh-print-price").value = "";
+      } else if (st === 401 || st === 403) {
+        status.textContent = "❌ Upload key expired or revoked — tell Tobias.";
+      } else {
+        status.textContent = "❌ GitHub error: " + (j.message || st);
+      }
+    })
+    .catch(e => { status.textContent = "❌ " + e.message; });
 }
 
 function uploadFile() {
