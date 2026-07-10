@@ -366,6 +366,7 @@ function render(d) {
   const dirCls = dir === "BUY" ? "dir-buy" : dir === "SELL" ? "dir-sell" : "dir-flat";
   const arrow  = d.arrow || (dir === "BUY" ? "▲" : dir === "SELL" ? "▼" : "→");
   const spot   = d.market?.hrc_spot;
+  const lastPrint = d.market?.spot_last_print;
   const asOf   = d.as_of;
   const sigs   = d.signals || {};
   const SA = sigs.SA || {}, SB = sigs.SB || {}, SC = sigs.SC || {}, SD = sigs.SD || {};
@@ -384,7 +385,8 @@ function render(d) {
     <div class="hero-direction ${dirCls}">${dir} ${arrow}</div>
     <div class="hero-score" style="color:${scoreColor(d.composite)}">Composite: ${fmtScore(d.composite)}</div>
     <div class="hero-spot">
-      NW EU HRC Spot: <strong>${spot != null ? "€" + spot.toFixed(0) + "/t" : "DO NOT KNOW"}</strong>
+      NW EU HRC Spot: <strong>${spot != null ? "€" + spot.toFixed(0) + "/t" : "DO NOT KNOW"}</strong> <span style="opacity:.75">(monthly avg — EHR settles vs this)</span>
+      ${lastPrint ? `&nbsp;|&nbsp; Last print: <strong>€${lastPrint.eur_t.toFixed(2)}/t</strong> <span style="opacity:.75">(${lastPrint.date})</span>` : ""}
       ${SC.t6m_price != null ? `&nbsp;|&nbsp; EHR T+6M: <strong>€${SC.t6m_price.toFixed(0)}/t</strong>` : ""}
     </div>
   </div>`;
@@ -397,9 +399,9 @@ function render(d) {
     <div class="card-title">Market Context</div>
     <div class="inv-strip">
       <div class="inv-kv">
-        <div class="kv-label">HRC Spot</div>
+        <div class="kv-label">HRC Spot (monthly avg)</div>
         <div class="kv-val" style="color:var(--accent2)">${spot != null ? "€"+spot.toFixed(0) : "—"}</div>
-        <div class="kv-sub">Argus NW EU EXW  [USER-PROVIDED]</div>
+        <div class="kv-sub">${lastPrint ? `Last print €${lastPrint.eur_t.toFixed(2)} · ${lastPrint.date} · ` : ""}Argus NW EU EXW  [USER-PROVIDED]</div>
       </div>
       <div class="inv-kv">
         <div class="kv-label">Cumul. Inventory Gap</div>
