@@ -224,6 +224,8 @@ body {
   </div>
 </div>
 
+<div id="sync-warning" style="display:none;margin:10px 18px 0;padding:9px 14px;border:1px solid var(--sell);border-radius:6px;background:color-mix(in srgb, var(--sell) 12%, transparent);color:var(--sell);font-size:12px;line-height:1.5"></div>
+
 <div class="main" id="content">
   <div class="error-msg"><span class="spinner"></span>&nbsp; Loading signal data…</div>
 </div>
@@ -236,7 +238,29 @@ let _manual = null;        // live manual_inputs.json when SERVER_MODE
 let _brief = null;         // daily analyst brief markdown
 let _uploadToken = null;   // team upload key from the encrypted bundle (no GitHub account needed)
 
+// GitHub-sync health (local mode only): a stuck pull means colleague uploads
+// silently stop arriving — surface it instead of leaving it in the log.
+// 15-min grace so a brief offline blip (Mac asleep) doesn't flash a warning.
+function checkSyncStatus() {
+  if (!SERVER_MODE) return;
+  fetch("/api/sync-status").then(r => r.ok ? r.json() : null).catch(() => null)
+    .then(s => {
+      const el = document.getElementById("sync-warning");
+      if (!s || s.ok || !s.failing_since ||
+          Date.now() - new Date(s.failing_since).getTime() < 15 * 60 * 1000) {
+        el.style.display = "none";
+        return;
+      }
+      const since = new Date(s.failing_since).toLocaleString("de-DE",
+        { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+      el.innerHTML = `<b>⚠ GitHub-Sync fehlgeschlagen seit ${since}</b> — neue Uploads von Kollegen ` +
+        `kommen nicht mehr an. Fehler: <code>${(s.error || "unbekannt").replace(/</g, "&lt;")}</code>`;
+      el.style.display = "block";
+    });
+}
+
 function refresh() {
+  checkSyncStatus();
   document.getElementById("spin").style.display = "inline-block";
   // Encrypted deployment (GitHub Pages): data.enc present → password-protected bundle
   fetch("./data.enc?t=" + Date.now())
