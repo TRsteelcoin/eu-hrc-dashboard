@@ -471,6 +471,31 @@ function render(d) {
     </div>`;
   }).join("");
 
+  // Energy cost context — margin/competitiveness barometer, NOT in the composite.
+  // Colour is deliberately neutral: rising energy is not a directional price signal
+  // (tested — no positive lead vs NW HRC), so it must not read as BUY/SELL.
+  const en = d.market?.energy;
+  const enTiles = en ? ["brent","wti","ttf"].map(k => {
+    const e = en[k]; if (!e) return "";
+    const chg = e.chg_1w, pct = e.chg_1w_pct;
+    const arrow = chg == null ? "" : chg > 0 ? "▲" : chg < 0 ? "▼" : "►";
+    const chgTxt = chg == null ? "" :
+      `${arrow} ${chg>0?"+":""}${chg.toFixed(2)}${pct!=null?` (${pct>0?"+":""}${pct.toFixed(1)}%)`:""} · 1W`;
+    return `
+      <div class="inv-kv">
+        <div class="kv-label">${e.name}</div>
+        <div class="kv-val" style="color:var(--ink)">${e.price != null ? e.price.toFixed(2) : "—"} <span style="font-size:12px;opacity:.6">${e.unit}</span></div>
+        <div class="kv-sub" style="opacity:.85">${chgTxt}</div>
+      </div>`;
+  }).join("") : "";
+  const enDate = en && (en.brent?.date || en.ttf?.date || en.wti?.date);
+  const energyHtml = en ? `
+  <div class="card">
+    <div class="card-title">Energy Cost — Context <span style="font-weight:400;opacity:.55;font-size:12px">· margin/competitiveness barometer — NOT in composite</span></div>
+    <div class="inv-strip">${enTiles}</div>
+    <div class="kv-sub" style="margin-top:8px;opacity:.65">${enDate ? "As of "+enDate+" · " : ""}${en.source || "Yahoo Finance (free/delayed)"} &nbsp;·&nbsp; ${en.note || ""}</div>
+  </div>` : "";
+
   // Annual context table
   const annualCtx = d.annual_context || {};
   const annualRows = Object.entries(annualCtx).map(([yr, row]) => {
@@ -508,6 +533,8 @@ function render(d) {
     <div class="grid-signals">
       ${sigCards}
     </div>
+
+    ${energyHtml}
 
     ${SERVER_MODE ? "" : analystPanelHtml(d)}
 
