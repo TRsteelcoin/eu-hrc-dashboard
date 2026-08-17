@@ -727,11 +727,15 @@ function dataHealthHtml(d) {
   }
 
   (d.ingest_alerts || []).forEach(a => {
+    // The dismiss button needs the local API, so it only exists on the served
+    // dashboard. On the public site the alert is information, not an action.
     items.push(`<b>Upload failed</b> — ${esc((a.time || "").replace("T", " ").slice(0, 16))} `
       + `· ${esc(a.file)}<br><span style="opacity:.85">${esc(a.result)}</span>`
-      + `<br><button onclick="dismissAlert('${esc(a.time)}', this)" `
-      + `style="margin-top:4px;font-size:11px;padding:2px 8px;cursor:pointer">`
-      + `Acknowledged — hide</button>`);
+      + (SERVER_MODE
+        ? `<br><button onclick="dismissAlert('${esc(a.time)}', this)" `
+          + `style="margin-top:4px;font-size:11px;padding:2px 8px;cursor:pointer">`
+          + `Acknowledged — hide</button>`
+        : ""));
   });
 
   if (!items.length) return "";
