@@ -701,9 +701,37 @@ function dataHealthHtml(d) {
       + `Upload the Argus daily file to restore it.`);
   }
 
+  // Fundamentals held back by ONE unpublished sector: as_of stops moving and the
+  // reason is invisible unless it is said out loud.
+  const f = d.fundamentals || {};
+  if (f.blocked_month && (f.awaiting_sectors || []).length) {
+    items.push(`<b>Fundamentals held at ${esc(f.as_of)}</b> — Eurostat has published `
+      + `${esc(f.blocked_month)} for some sectors but not for `
+      + `${esc((f.awaiting_sectors || []).join(", "))}. The weighted index needs all five `
+      + `sector groups, so ${esc(f.blocked_month)} cannot enter the model yet. `
+      + `SA/SB read ${esc(f.as_of)} (${esc(f.months_behind)} months behind). `
+      + `Nothing to fix here — it clears when Eurostat publishes.`);
+  }
+
+  const bs = d.brief_status || {};
+  if (bs.ok === false) {
+    items.push(`<b>Daily brief failed</b> — last attempt `
+      + `${esc((bs.last_attempt || "").replace("T", " ").slice(0, 16))} after `
+      + `${esc(bs.attempts)} tries. The brief shown below is from `
+      + `${esc((bs.brief_written || "?").slice(0, 10))}`
+      + `${bs.age_bdays ? ` (${esc(bs.age_bdays)} business days old)` : ""}. `
+      + `<span style="opacity:.85">${esc(bs.error)}</span>`);
+  } else if (bs.stale) {
+    items.push(`<b>Brief is not from today</b> — written `
+      + `${esc((bs.brief_written || "?").slice(0, 10))}, ${esc(bs.age_bdays)} business days old.`);
+  }
+
   (d.ingest_alerts || []).forEach(a => {
     items.push(`<b>Upload failed</b> — ${esc((a.time || "").replace("T", " ").slice(0, 16))} `
-      + `· ${esc(a.file)}<br><span style="opacity:.85">${esc(a.result)}</span>`);
+      + `· ${esc(a.file)}<br><span style="opacity:.85">${esc(a.result)}</span>`
+      + `<br><button onclick="dismissAlert('${esc(a.time)}', this)" `
+      + `style="margin-top:4px;font-size:11px;padding:2px 8px;cursor:pointer">`
+      + `Acknowledged — hide</button>`);
   });
 
   if (!items.length) return "";
@@ -713,6 +741,24 @@ function dataHealthHtml(d) {
       ⚠ Data health — ${items.length} issue${items.length > 1 ? "s need" : " needs"} attention</div>
     ${items.map(t => `<div style="font-size:12px;color:var(--text);margin:3px 0">${t}</div>`).join("")}
   </div>`;
+}
+
+// A failed upload is no longer auto-cleared by the next upload of the same type,
+// so clearing it is a deliberate act. The failure stays in the ingest log for good.
+async function dismissAlert(time, btn) {
+  btn.disabled = true;
+  btn.textContent = "…";
+  try {
+    const r = await fetch("/api/ingest/dismiss", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ time })
+    });
+    if (!r.ok) throw new Error(await r.text());
+    btn.textContent = "hidden — clears on next model run";
+  } catch (e) {
+    btn.disabled = false;
+    btn.textContent = "dismiss failed — retry";
+  }
 }
 
 // ─── Upload ingest status (from the last model run) ───────────────────────────
