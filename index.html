@@ -691,7 +691,12 @@ function reportHtml(d) {
 // for a fortnight. Both now appear at the top of the page.
 function dataHealthHtml(d) {
   const esc = s => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  // items = something is wrong and someone must act. notes = a fact worth knowing
+  // that nobody can act on (an external publisher's clock). Mixing the two put
+  // "Nothing to fix here" inside a red "needs attention" box, which reads as a
+  // fault and trains the reader to distrust the banner.
   const items = [];
+  const notes = [];
 
   const sd = (d.signals || {}).SD || {};
   if (sd.stale) {
@@ -705,7 +710,7 @@ function dataHealthHtml(d) {
   // reason is invisible unless it is said out loud.
   const f = d.fundamentals || {};
   if (f.blocked_month && (f.awaiting_sectors || []).length) {
-    items.push(`<b>Fundamentals held at ${esc(f.as_of)}</b> — Eurostat has published `
+    notes.push(`<b>Fundamentals held at ${esc(f.as_of)}</b> — Eurostat has published `
       + `${esc(f.blocked_month)} for some sectors but not for `
       + `${esc((f.awaiting_sectors || []).join(", "))}. The weighted index needs all five `
       + `sector groups, so ${esc(f.blocked_month)} cannot enter the model yet. `
@@ -738,13 +743,25 @@ function dataHealthHtml(d) {
         : ""));
   });
 
-  if (!items.length) return "";
-  return `<div style="background:var(--sell-dim);border:1px solid var(--sell);
-      border-radius:8px;padding:10px 12px;margin-bottom:12px">
-    <div style="font-weight:700;color:var(--text);margin-bottom:6px">
-      ⚠ Data health — ${items.length} issue${items.length > 1 ? "s need" : " needs"} attention</div>
-    ${items.map(t => `<div style="font-size:12px;color:var(--text);margin:3px 0">${t}</div>`).join("")}
-  </div>`;
+  const row = t => `<div style="font-size:12px;color:var(--text);margin:3px 0">${t}</div>`;
+  let html = "";
+  if (items.length) {
+    html += `<div style="background:var(--sell-dim);border:1px solid var(--sell);
+        border-radius:8px;padding:10px 12px;margin-bottom:12px">
+      <div style="font-weight:700;color:var(--text);margin-bottom:6px">
+        ⚠ Data health — ${items.length} issue${items.length > 1 ? "s need" : " needs"} attention</div>
+      ${items.map(row).join("")}
+    </div>`;
+  }
+  if (notes.length) {
+    html += `<div style="background:var(--card);border:1px solid var(--border);
+        border-radius:8px;padding:10px 12px;margin-bottom:12px">
+      <div style="font-weight:700;color:var(--muted);margin-bottom:6px">
+        ℹ Waiting on data — nothing to fix</div>
+      ${notes.map(row).join("")}
+    </div>`;
+  }
+  return html;
 }
 
 // A failed upload is no longer auto-cleared by the next upload of the same type,
