@@ -710,12 +710,30 @@ function dataHealthHtml(d) {
   // reason is invisible unless it is said out loud.
   const f = d.fundamentals || {};
   if (f.blocked_month && (f.awaiting_sectors || []).length) {
-    notes.push(`<b>Fundamentals held at ${esc(f.as_of)}</b> — Eurostat has published `
-      + `${esc(f.blocked_month)} for some sectors but not for `
-      + `${esc((f.awaiting_sectors || []).join(", "))}. The weighted index needs all five `
-      + `sector groups, so ${esc(f.blocked_month)} cannot enter the model yet. `
-      + `SA/SB read ${esc(f.as_of)} (${esc(f.months_behind)} months behind). `
-      + `Nothing to fix here — it clears when Eurostat publishes.`);
+    const rel = f.release || {};
+    const prov = f.provisional || {};
+    const est = Object.keys(prov);
+    const late = rel.overdue
+      ? ` The EU27 aggregate was due ${esc(rel.due)} and is <b>overdue</b>.`
+      : (rel.due ? ` Next EU27 aggregate due ${esc(rel.due)}.` : "");
+    let line = `<b>Fundamentals held at ${esc(f.as_of)}</b> — Eurostat has published `
+      + `${esc(f.blocked_month)} for every other sector but not for `
+      + `${esc((f.awaiting_sectors || []).join(", "))}.${late} `
+      + `The weighted index needs all five sector groups, so the ACTUAL `
+      + `${esc(f.blocked_month)} cannot enter the model yet; SA/SB read `
+      + `${esc(f.as_of)} (${esc(f.months_behind)} months behind).`;
+    if (est.length) {
+      const p0 = prov[est[0]] || {};
+      line += `<br><b>Estimated meanwhile:</b> ` + est.map(k =>
+        `${esc(k)} ${esc((prov[k] || {}).value)}`).join(" · ")
+        + ` — <b>EST</b>, computed from ${esc((p0.countries || []).length)} member states `
+        + `that already published ${esc(f.blocked_month)} (each ACTUAL — Eurostat). `
+        + `Out-of-sample error over ${esc(p0.oos_months)} months: MAE `
+        + `${esc(p0.oos_mae)} index points, max ${esc(p0.oos_max)}. `
+        + `Display only — it does not feed SA/SB, and the ACTUAL replaces it on the `
+        + `first run after Eurostat publishes.`;
+    }
+    notes.push(line);
   }
 
   const bs = d.brief_status || {};
