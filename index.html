@@ -717,7 +717,7 @@ function dataHealthHtml(d) {
   if (bs.ok === false) {
     items.push(`<b>Daily brief failed</b> — last attempt `
       + `${esc((bs.last_attempt || "").replace("T", " ").slice(0, 16))} after `
-      + `${esc(bs.attempts)} tries. The brief shown below is from `
+      + `${esc(bs.attempts)} ${bs.attempts === 1 ? "try" : "tries"}. The brief shown below is from `
       + `${esc((bs.brief_written || "?").slice(0, 10))}`
       + `${bs.age_bdays ? ` (${esc(bs.age_bdays)} business days old)` : ""}. `
       + `<span style="opacity:.85">${esc(bs.error)}</span>`);
