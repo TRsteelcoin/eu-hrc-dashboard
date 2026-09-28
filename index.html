@@ -66,7 +66,7 @@ body {
 /* LAYOUT */
 .main { max-width: 1280px; margin: 0 auto; padding: 24px 20px; }
 .grid-top    { display: grid; grid-template-columns: 260px 1fr; gap: 16px; margin-bottom: 16px; }
-.grid-signals{ display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+.grid-signals{ display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 16px; }
 .grid-mid    { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 16px; }
 .grid-bot    { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
 
@@ -393,7 +393,8 @@ function render(d) {
   const lastPrint = d.market?.spot_last_print;
   const asOf   = d.as_of;
   const sigs   = d.signals || {};
-  const SA = sigs.SA || {}, SB = sigs.SB || {}, SC = sigs.SC || {}, SD = sigs.SD || {};
+  const SA = sigs.SA || {}, SB = sigs.SB || {}, SC = sigs.SC || {}, SD = sigs.SD || {}, SE = sigs.SE || {};
+  const pw = w => { const p = (w || 0) * 100; return (Number.isInteger(Math.round(p*10)/10) ? p.toFixed(0) : p.toFixed(1)) + "%"; };
 
   // Pills
   document.getElementById("period-pill").textContent = "As of " + asOf;
@@ -448,15 +449,20 @@ function render(d) {
   // Signal cards
   const sigDefs = [
     { key: "SA", name: "SA — Inventory Flow", s: SA,
-      detail: `3M-MA: ${gap3m != null ? fmtGap(gap3m)+" Mt/mo" : "—"} &nbsp;|&nbsp; Latest: ${SA.gap_latest_mt != null ? fmtGap(SA.gap_latest_mt)+" Mt" : "—"}<br>Weight: ${((SA.weight||0)*100).toFixed(0)}%` },
+      detail: `3M-MA: ${gap3m != null ? fmtGap(gap3m)+" Mt/mo" : "—"} &nbsp;|&nbsp; Latest: ${SA.gap_latest_mt != null ? fmtGap(SA.gap_latest_mt)+" Mt" : "—"}<br>Weight: ${pw(SA.weight)}` },
     { key: "SB", name: "SB — Inventory Level", s: SB,
-      detail: `Cumulative gap: ${cum != null ? fmtGap(cum)+" Mt" : "—"}<br>Lean &lt; −3 Mt  /  Bloated &gt; +3 Mt  /  Weight: ${((SB.weight||0)*100).toFixed(0)}%` },
+      detail: `Cumulative gap: ${cum != null ? fmtGap(cum)+" Mt" : "—"}<br>Lean &lt; −3 Mt  /  Bloated &gt; +3 Mt  /  Weight: ${pw(SB.weight)}` },
     { key: "SC", name: "SC — Forward Curve", s: SC,
-      detail: `T+6M: ${SC.t6m_price != null ? "€"+SC.t6m_price.toFixed(0)+"/t" : "—"} (${SC.t6m_pct != null ? (SC.t6m_pct>0?"+":"")+(SC.t6m_pct*100).toFixed(1)+"%" : "—"})<br>Curve slope: ${SC.slope_annual != null ? (SC.slope_annual>0?"+":"")+SC.slope_annual.toFixed(1)+"€/t per yr" : "—"}  /  Weight: ${((SC.weight||0)*100).toFixed(0)}%` },
+      detail: `T+6M: ${SC.t6m_price != null ? "€"+SC.t6m_price.toFixed(0)+"/t" : "—"} (${SC.t6m_pct != null ? (SC.t6m_pct>0?"+":"")+(SC.t6m_pct*100).toFixed(1)+"%" : "—"})<br>Curve slope: ${SC.slope_annual != null ? (SC.slope_annual>0?"+":"")+SC.slope_annual.toFixed(1)+"€/t per yr" : "—"}  /  Weight: ${pw(SC.weight)}` },
     { key: "SD", name: "SD — Italy Lead", s: SD,
       detail: `Italy EXW 2w momentum: ${SD.italy_mom2w != null ? (SD.italy_mom2w>0?"+":"")+"€"+SD.italy_mom2w.toFixed(2) : "—"} (data ${SD.data_date || SD.asof || "—"}${SD.age_bdays != null ? `, ${SD.age_bdays}bd old` : ""})`
         + (SD.stale ? `<br><span style="color:var(--sell);font-weight:700">STALE — SUSPENDED, scored 0.0</span>` : "")
-        + `<br>Backtest hit 78% fwd 1-2w  /  Weight: ${((SD.weight||0)*100).toFixed(0)}%` },
+        + `<br>Backtest hit 78% fwd 1-2w  /  Weight: ${pw(SD.weight)}` },
+    { key: "SE", name: "SE — Quota Pressure", s: SE,
+      detail: `1A HRC quota used: ${SE.used_pct != null ? SE.used_pct.toFixed(1)+"%" : "—"} vs ${SE.elapsed_pct != null ? SE.elapsed_pct.toFixed(1)+"%" : "—"} of quarter (${SE.gap_pp != null ? (SE.gap_pp>0?"+":"")+SE.gap_pp.toFixed(1)+" pp" : "—"})`
+        + `<br>TARIC ${SE.asof || "—"}${SE.age_bdays != null ? `, ${SE.age_bdays}bd old` : ""}`
+        + (SE.stale ? `<br><span style="color:var(--sell);font-weight:700">STALE — SUSPENDED, scored 0.0</span>` : "")
+        + `<br>±${SE.band_pp ?? 15} pp band · UNVALIDATED  /  Weight: ${pw(SE.weight)}` },
   ];
 
   const sigCards = sigDefs.map(({ key, name, s, detail }) => {
@@ -496,6 +502,65 @@ function render(d) {
     <div class="kv-sub" style="margin-top:8px;opacity:.65">${enDate ? "As of "+enDate+" · " : ""}${en.source || "Yahoo Finance (free/delayed)"} &nbsp;·&nbsp; ${en.note || ""}</div>
   </div>` : "";
 
+  // Safeguard quota balances (Reg. (EU) 2026/1457) — feeds SE. Figures are
+  // DG TAXUD allocation data; the exhaustion projections are EST (linear, own history).
+  const qt = d.market?.quota;
+  const fmtT = v => v == null ? "—" : Math.round(v).toLocaleString("en-US");
+  const qBar = pct => { const p = Math.max(0, Math.min(100, pct ?? 0));
+    const col = p < 10 ? "var(--sell)" : p < 30 ? "#f4b942" : "var(--buy)";
+    return `<div style="display:flex;align-items:center;gap:6px"><div style="flex:1;min-width:60px;height:6px;border-radius:3px;background:var(--card2)"><div style="width:${p}%;height:100%;border-radius:3px;background:${col}"></div></div><span style="width:40px;text-align:right">${pct != null ? pct.toFixed(1)+"%" : "—"}</span></div>`; };
+  const quotaHtml = (qt && qt.hrc && qt.hrc.quota_t) ? (() => {
+    const h = qt.hrc, gap = h.used_net_pct - qt.elapsed_pct;
+    const rows = (h.lines || []).map(l => {
+      const status = l.exhausted ? `<span style="color:var(--sell);font-weight:700">Exhausted ${l.exhausted}</span>`
+        : l.critical ? `<span style="color:#f4b942;font-weight:700">Critical</span>`
+        : l.est_exhaustion ? `<span class="tag tag-est">EST</span> out ~${l.est_exhaustion}` : "";
+      const chg = l.chg_prev_t == null || Math.abs(l.chg_prev_t) < 0.5 ? "—"
+        : (l.chg_prev_t > 0 ? "+" : "−") + fmtT(Math.abs(l.chg_prev_t));
+      return `<tr>
+        <td>${l.origin}</td><td style="opacity:.7">${l.type}</td>
+        <td style="text-align:right">${fmtT(l.quota_t)}</td>
+        <td style="text-align:right">${fmtT(l.balance_t)}</td>
+        <td style="text-align:right">${l.awaiting_t ? fmtT(l.awaiting_t) : "—"}</td>
+        <td>${qBar(l.remaining_pct)}</td>
+        <td style="text-align:right">${chg}</td>
+        <td>${status}</td></tr>`;
+    }).join("");
+    const ctx = Object.entries(qt.context || {}).filter(([, c]) => c && c.quota_t).map(([k, c]) => `<tr>
+        <td>${k}</td><td>${c.name || ""}</td>
+        <td style="text-align:right">${fmtT(c.quota_t)}</td>
+        <td style="text-align:right">${fmtT(c.balance_t)}</td>
+        <td>${qBar(c.remaining_pct)}</td>
+        <td>${c.exhausted?.length ? c.exhausted.length + " exhausted" : "—"}</td></tr>`).join("");
+    return `
+  <div class="card" style="margin:16px 0">
+    <div class="card-title">Safeguard Quotas — Cat. ${qt.hrc_cat} HRC coils <span style="font-weight:400;opacity:.55;font-size:12px">· Q ${qt.period_start} → ${qt.period_end} · day ${qt.quarter_day}/${qt.quarter_days} · feeds SE</span></div>
+    ${qt.fetch_ok === false ? `<div style="color:var(--sell);font-size:11px;margin-bottom:8px">Latest fetch failed (${qt.fetch_error}) — showing last logged snapshot</div>` : ""}
+    <div class="inv-strip">
+      <div class="inv-kv"><div class="kv-label">Remaining (in-quota)</div>
+        <div class="kv-val">${fmtT(h.balance_t)} t</div>
+        <div class="kv-sub">${h.remaining_pct}% of ${fmtT(h.quota_t)} t quarterly quota</div></div>
+      <div class="inv-kv"><div class="kv-label">Used vs Time</div>
+        <div class="kv-val ${gap >= 5 ? "gap-pos" : gap <= -5 ? "gap-neg" : "gap-neu"}">${gap > 0 ? "+" : ""}${gap.toFixed(1)} pp</div>
+        <div class="kv-sub">${h.used_net_pct}% used (net) vs ${qt.elapsed_pct}% elapsed</div></div>
+      <div class="inv-kv"><div class="kv-label">Awaiting Allocation</div>
+        <div class="kv-val">${fmtT(h.awaiting_t)} t</div>
+        <div class="kv-sub">requested, not yet allocated</div></div>
+      <div class="inv-kv"><div class="kv-label">Origins Exhausted / Critical</div>
+        <div class="kv-val">${h.exhausted.length} / ${h.critical.length}</div>
+        <div class="kv-sub">of ${h.n_lines} quota lines</div></div>
+    </div>
+    <div style="overflow-x:auto;margin-top:12px">
+    <table class="data-table">
+      <thead><tr><th>Origin</th><th>Type</th><th style="text-align:right">Quota t</th><th style="text-align:right">Balance t</th><th style="text-align:right">Awaiting t</th><th>Remaining</th><th style="text-align:right">Δ prev</th><th>Status</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    </div>
+    ${ctx ? `<div style="overflow-x:auto;margin-top:12px"><div class="kv-label" style="margin-bottom:4px">Other flat categories — context, not in SE</div>
+    <table class="data-table"><thead><tr><th>Cat</th><th>Product</th><th style="text-align:right">Quota t</th><th style="text-align:right">Balance t</th><th>Remaining</th><th></th></tr></thead><tbody>${ctx}</tbody></table></div>` : ""}
+    <div class="kv-sub" style="margin-top:8px;opacity:.65">TARIC as of ${qt.as_of} · fetched ${String(qt.fetched_at || "").replace("T"," ").slice(0,16)} UTC · ${qt.source} (${qt.regulation}) [ACTUAL] · Δ prev = balance change vs previous snapshot · own history: ${qt.history_days} day(s)</div>
+  </div>`; })() : "";
+
   // Annual context table
   const annualCtx = d.annual_context || {};
   const annualRows = Object.entries(annualCtx).map(([yr, row]) => {
@@ -517,7 +582,7 @@ function render(d) {
     return `<tr>
       <td>${key}</td>
       <td class="${sc}">${score >= 0 ? "+" : ""}${score.toFixed(2)}</td>
-      <td>${(wt*100).toFixed(0)}%</td>
+      <td>${pw(wt)}</td>
       <td class="${sc}">${Number(contrib) >= 0 ? "+" : ""}${contrib}</td>
     </tr>`;
   }).join("");
@@ -535,6 +600,8 @@ function render(d) {
     </div>
 
     ${energyHtml}
+
+    ${quotaHtml}
 
     ${SERVER_MODE ? "" : analystPanelHtml(d)}
 
@@ -569,7 +636,7 @@ function render(d) {
         </table>
         <div style="margin-top:12px;font-size:10px;color:var(--muted);line-height:1.6">
           Direction thresholds: &gt;+0.40 → BUY &nbsp;|&nbsp; &lt;−0.40 → SELL &nbsp;|&nbsp; else NEUTRAL<br>
-          SA gap: ±0.25 Mt/mo &nbsp;|&nbsp; SB level: ±3 Mt &nbsp;|&nbsp; SC curve: ±4% &nbsp;|&nbsp; SD Italy 2w-mom: ±€5
+          SA gap: ±0.25 Mt/mo &nbsp;|&nbsp; SB level: ±3 Mt &nbsp;|&nbsp; SC curve: ±4% &nbsp;|&nbsp; SD Italy 2w-mom: ±€5 &nbsp;|&nbsp; SE quota used − time: ±${SE.band_pp ?? 15} pp
         </div>
       </div>
     </div>
@@ -595,18 +662,21 @@ function render(d) {
         <div><strong style="color:var(--text)">Apparent Demand</strong><br>
         Annual AC (Eurofer ACTUAL, 2018-2025) distributed monthly by Eurostat Wtd seasonal pattern.<br>
         Formula: AC_annual × (Wtd_month / Wtd_annual_avg) / 12.</div>
-        <div><strong style="color:var(--text)">SA — Inventory Flow (30%)</strong><br>
+        <div><strong style="color:var(--text)">SA — Inventory Flow (${pw(SA.weight)})</strong><br>
         Monthly gap = Apparent − Real, 3M-MA.<br>
         &gt;+0.25 Mt/mo → RESTOCK ▲ (+1) &nbsp;|&nbsp; &lt;−0.25 → DESTOCK ▼ (−1).</div>
-        <div><strong style="color:var(--text)">SB — Inventory Level (30%)</strong><br>
+        <div><strong style="color:var(--text)">SB — Inventory Level (${pw(SB.weight)})</strong><br>
         Cumulative gap from Jan-2019 baseline (implied stock position).<br>
         &lt;−3 Mt → LEAN ▲ (+1) &nbsp;|&nbsp; &gt;+3 Mt → BLOATED ▼ (−1).</div>
-        <div><strong style="color:var(--text)">SC — Forward Curve (20%)</strong><br>
+        <div><strong style="color:var(--text)">SC — Forward Curve (${pw(SC.weight)})</strong><br>
         EHR CME T+6M futures vs Argus spot.<br>
         &gt;+4% → CONTANGO ▲ (+1) &nbsp;|&nbsp; &lt;−4% → BACKWARDATION ▼ (−1).</div>
-        <div><strong style="color:var(--text)">SD — Italy Lead (20%)</strong><br>
+        <div><strong style="color:var(--text)">SD — Italy Lead (${pw(SD.weight)})</strong><br>
         Italy HRC EXW 2-week momentum (Italy leads NW by 1-2 weeks).<br>
         &gt;+€5 → ▲ (+1) &nbsp;|&nbsp; &lt;−€5 → ▼ (−1). Backtest Jul23–Jul26: 78% hit fwd 1-2w, stable across years.</div>
+        <div><strong style="color:var(--text)">SE — Quota Pressure (${pw(SE.weight)})</strong><br>
+        Safeguard quota cat. 1A (HRC coils): net used % (incl. awaiting allocation) − quarter elapsed %.<br>
+        ≥+15 pp → drawing down fast ▲ (+1) &nbsp;|&nbsp; ≤−15 pp → quota left unused ▼ (−1), linear between. Unvalidated (added 28 Sep 2026); inflated by each quarter's opening rush.</div>
         <div><strong style="color:var(--text)">Key Caveats</strong><br>
         Monthly apparent = EST (annual actual distributed seasonally; Comext monthly unavailable).<br>
         Apr-2026 imports +83% vs avg due to safeguard front-loading — may distort 2026 apparent.</div>
@@ -615,7 +685,7 @@ function render(d) {
 
     <div class="footer">
       <strong>EU HRC NW Europe — Demand-Gap Signal Model v4</strong> &nbsp;·&nbsp; SteelCoin internal use only<br>
-      Argus NW EU HRC EXW (USER-PROVIDED) &nbsp;·&nbsp; Eurostat sts_inpr_m + sts_copr_m (ACTUAL) &nbsp;·&nbsp; EHR CME (${(d.market && d.market.curve_source) || "DO NOT KNOW"}) &nbsp;·&nbsp; Eurofer annual AC (ACTUAL)<br>
+      Argus NW EU HRC EXW (USER-PROVIDED) &nbsp;·&nbsp; Eurostat sts_inpr_m + sts_copr_m (ACTUAL) &nbsp;·&nbsp; EHR CME (${(d.market && d.market.curve_source) || "DO NOT KNOW"}) &nbsp;·&nbsp; Eurofer annual AC (ACTUAL) &nbsp;·&nbsp; Safeguard quotas: EC DG TAXUD via EU Steel Quota Monitor (ACTUAL)<br>
       Auto-run 08:00 Mon–Fri &nbsp;·&nbsp; manual refresh via Run Model button &nbsp;·&nbsp; JSON generated: ${d.generated ? d.generated.replace("T"," ").slice(0,16) : "unknown"} (local)
     </div>`;
 
