@@ -459,10 +459,10 @@ function render(d) {
         + (SD.stale ? `<br><span style="color:var(--sell);font-weight:700">STALE — SUSPENDED, scored 0.0</span>` : "")
         + `<br>Backtest hit 78% fwd 1-2w  /  Weight: ${pw(SD.weight)}` },
     { key: "SE", name: "SE — Quota Pressure", s: SE,
-      detail: `1A HRC quota used: ${SE.used_pct != null ? SE.used_pct.toFixed(1)+"%" : "—"} vs ${SE.elapsed_pct != null ? SE.elapsed_pct.toFixed(1)+"%" : "—"} of quarter (${SE.gap_pp != null ? (SE.gap_pp>0?"+":"")+SE.gap_pp.toFixed(1)+" pp" : "—"})`
+      detail: `1A quota bound: ${SE.binding_share_pct != null ? SE.binding_share_pct.toFixed(1)+"%" : "—"} (${(SE.bound || []).length} origins &lt;10% left / exhausted)`
         + `<br>TARIC ${SE.asof || "—"}${SE.age_bdays != null ? `, ${SE.age_bdays}bd old` : ""}`
         + (SE.stale ? `<br><span style="color:var(--sell);font-weight:700">STALE — SUSPENDED, scored 0.0</span>` : "")
-        + `<br>±${SE.band_pp ?? 15} pp band · UNVALIDATED  /  Weight: ${pw(SE.weight)}` },
+        + `<br>0% → −1 · ${SE.bind_mid ?? 25}% → 0 · ${(SE.bind_mid ?? 25)+(SE.bind_band ?? 25)}% → +1 · UNVALIDATED  /  Weight: ${pw(SE.weight)}` },
   ];
 
   const sigCards = sigDefs.map(({ key, name, s, detail }) => {
@@ -540,6 +540,9 @@ function render(d) {
       <div class="inv-kv"><div class="kv-label">Remaining (in-quota)</div>
         <div class="kv-val">${fmtT(h.balance_t)} t</div>
         <div class="kv-sub">${h.remaining_pct}% of ${fmtT(h.quota_t)} t quarterly quota</div></div>
+      <div class="inv-kv"><div class="kv-label">Quota Bound (→ SE)</div>
+        <div class="kv-val ${h.binding_share_pct >= 37.5 ? "gap-pos" : h.binding_share_pct <= 12.5 ? "gap-neg" : "gap-neu"}">${h.binding_share_pct != null ? h.binding_share_pct.toFixed(1)+"%" : "—"}</div>
+        <div class="kv-sub">of 1A tonnage: origins exhausted or &lt;${qt.bind_remaining_pct ?? 10}% net left${(qt.binding_history || []).length > 1 ? " · trend " + qt.binding_history.slice(-5).map(b => b.binding_share_pct?.toFixed(0)).join(" → ") + "%" : ""}</div></div>
       <div class="inv-kv"><div class="kv-label">Used vs Time</div>
         <div class="kv-val ${gap >= 5 ? "gap-pos" : gap <= -5 ? "gap-neg" : "gap-neu"}">${gap > 0 ? "+" : ""}${gap.toFixed(1)} pp</div>
         <div class="kv-sub">${h.used_net_pct}% used (net) vs ${qt.elapsed_pct}% elapsed</div></div>
@@ -636,7 +639,7 @@ function render(d) {
         </table>
         <div style="margin-top:12px;font-size:10px;color:var(--muted);line-height:1.6">
           Direction thresholds: &gt;+0.40 → BUY &nbsp;|&nbsp; &lt;−0.40 → SELL &nbsp;|&nbsp; else NEUTRAL<br>
-          SA gap: ±0.25 Mt/mo &nbsp;|&nbsp; SB level: ±3 Mt &nbsp;|&nbsp; SC curve: ±4% &nbsp;|&nbsp; SD Italy 2w-mom: ±€5 &nbsp;|&nbsp; SE quota used − time: ±${SE.band_pp ?? 15} pp
+          SA gap: ±0.25 Mt/mo &nbsp;|&nbsp; SB level: ±3 Mt &nbsp;|&nbsp; SC curve: ±4% &nbsp;|&nbsp; SD Italy 2w-mom: ±€5 &nbsp;|&nbsp; SE 1A quota bound: 0/25/50% → −1/0/+1
         </div>
       </div>
     </div>
@@ -675,8 +678,8 @@ function render(d) {
         Italy HRC EXW 2-week momentum (Italy leads NW by 1-2 weeks).<br>
         &gt;+€5 → ▲ (+1) &nbsp;|&nbsp; &lt;−€5 → ▼ (−1). Backtest Jul23–Jul26: 78% hit fwd 1-2w, stable across years.</div>
         <div><strong style="color:var(--text)">SE — Quota Pressure (${pw(SE.weight)})</strong><br>
-        Safeguard quota cat. 1A (HRC coils): net used % (incl. awaiting allocation) − quarter elapsed %.<br>
-        ≥+15 pp → drawing down fast ▲ (+1) &nbsp;|&nbsp; ≤−15 pp → quota left unused ▼ (−1), linear between. Unvalidated (added 28 Sep 2026); inflated by each quarter's opening rush.</div>
+        Safeguard quota cat. 1A (HRC coils): share of quota tonnage with origins exhausted or &lt;10% net left (balance − awaiting).<br>
+        0% → origins open ▼ (−1) &nbsp;|&nbsp; 25% → 0 &nbsp;|&nbsp; ≥50% → origins closed ▲ (+1), linear. Reads −1 after each quarterly reset by design. Unvalidated (since 28/29 Sep 2026).</div>
         <div><strong style="color:var(--text)">Key Caveats</strong><br>
         Monthly apparent = EST (annual actual distributed seasonally; Comext monthly unavailable).<br>
         Apr-2026 imports +83% vs avg due to safeguard front-loading — may distort 2026 apparent.</div>
